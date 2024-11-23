@@ -5,6 +5,12 @@
 /.pnp
 .pnp.*
 .yarn/*
+.env
+.env.local
+.next/
+build/
+dist/
+.DS_Store
 !.yarn/patches
 !.yarn/plugins
 !.yarn/releases
