@@ -4,10 +4,11 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // Define CORS headers
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
+    'Access-Control-Allow-Origin': 'https://checkout.cinetpay.com',  // Only allow CinetPay domain
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Credentials': 'true'
+  };
 
 // Handle OPTIONS request (preflight)
 export async function OPTIONS() {
@@ -56,12 +57,15 @@ export async function POST(req: NextRequest) {
         paymentConfig: cpm_payment_config,
         metadata: cpm_custom
       }
-    });
+    },);
 
     // Return 200 OK with CORS headers
     return NextResponse.json(
       { message: 'Notification processed' },
-      { headers: corsHeaders }
+      { 
+        status: 200,  // Always return 200 as required by CinetPay
+        headers: corsHeaders 
+      }
     );
 
   } catch (error) {
