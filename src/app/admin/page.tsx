@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -22,9 +22,17 @@ import {
   FiUser,
   FiLogOut,
   FiRefreshCw,
+  FiSettings,
 } from "react-icons/fi";
 import { getAuth, signOut } from "firebase/auth";
 import { CircularProgress } from "@nextui-org/react";
+import PaymentSection from "@/components/admin/PaymentSection";
+import UnacceptedCompaniesSection from "@/components/admin/UnacceptedCompaniesSection";
+import BlockedCompaniesSection from "@/components/admin/BlockedCompaniesSection";
+import TransactionsSection from "@/components/admin/TransactionsSection";
+import PaymentSettingsSection from "@/components/admin/PaymentSettingsSection";
+import CompaniesSection from '@/components/admin/CompaniesSection';
+import Sidebar from '@/components/admin/Sidebar';
 
 interface Company {
   id: string;
@@ -286,7 +294,7 @@ export default function AdminDashboard() {
     getCounts();
   }, []);
 
-  const fetchPayments = async () => {
+  const fetchPayments = useCallback(async () => {
     setRefreshingPayments(true);
     try {
       const q = query(
@@ -311,7 +319,7 @@ export default function AdminDashboard() {
     } finally {
       setRefreshingPayments(false);
     }
-  };
+  }, [selectedMonth, selectedYear]);
 
   const sendReminder = async (companyId: string) => {
     setReminderLoading(companyId);
@@ -345,7 +353,7 @@ export default function AdminDashboard() {
     if (activeTab === 'payments') {
       fetchPayments();
     }
-  }, [selectedMonth, selectedYear, activeTab]);
+  }, [selectedMonth, selectedYear, activeTab, fetchPayments]);
 
   const sidebarItems = [
     { id: "all", label: "Tous", icon: <FiUsers />, count: companiesCount },
@@ -372,6 +380,12 @@ export default function AdminDashboard() {
       label: 'Monthly Payments',
       icon: <FiDollarSign />,
       count: pendingPaymentsCount
+    },
+    {
+      id: 'payment-settings',
+      label: 'Payment Settings',
+      icon: <FiSettings />,
+      count: 0
     },
   ];
 
@@ -424,420 +438,62 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <div className="flex pt-2 pb-2 h-screen">
-        <aside
-          className={`bg-main flex flex-col justify-between text-white font-sans m-2 rounded-sm shadow-sm w-64 fixed h-full transition-transform duration-300 ease-in-out ${
-            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } lg:translate-x-0`}
-        >
-          <div className="p-4">
-            <nav className="space-y-4">
-              {sidebarItems.map((item) => (
-                <div key={item.id} className="relative">
-                  <button
-                    onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center font-semibold px-4 py-3 text-sm rounded-md transition-colors ${
-                      activeTab === item.id
-                        ? "bg-indigo-200 text-main"
-                        : "bg-slate-100 text-main hover:bg-indigo-100 hover:text-main"
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      <span className="mr-3">{item.icon}</span>
-                      {item.label}
-                    </div>
-                  </button>
-                  <span className="absolute top-5 right-5 transform -translate-y-1/2 translate-x-1/2 bg-red-500 text-white text-[10px] font-semibold px-2 py-1 rounded-full min-w-[20px] text-center">
-                  { item.count}
-                  </span>
-                </div>
-              ))}
-            </nav>
-          </div>
-          <div className="mx-4 mb-10 bg-white rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <img
-                  src="/user-image.png"
-                  alt="User Image"
-                  className="w-8 h-8 rounded-full mr-4"
-                />
-                <div>
-                  <p className="text-gray-800 font-semibold text-[13px]">
-                    Jeremie Kounoudji
-                  </p>
-                  <p className="text-gray-600 text-sm">Administrator</p>
-                </div>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition duration-300"
-              >
-                <FiLogOut size={10} />
-              </button>
-            </div>
-          </div>
-        </aside>
-
+        <Sidebar
+          items={sidebarItems}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          isSidebarOpen={isSidebarOpen}
+          handleLogout={handleLogout}
+        />
+        
         <main
           className={`flex-1 p-8 transition-all duration-300 ${
             isSidebarOpen ? "lg:ml-64" : ""
           }`}
         >
           {activeTab === "all" && (
-            <div className="bg-white shadow rounded-lg">
-              <div className="overflow-x-auto">
-                <div className="flex justify-end mb-4">
-                  <button
-                    onClick={fetchCompanies}
-                    className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 flex items-center"
-                  >
-                    <FiRefreshCw className={`mr-2 ${refreshingCompanies ? 'animate-spin' : ''}`} />
-                    Refresh
-                  </button>
-                </div>
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Dénomination
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {companies.map((company) => (
-                      <tr key={company.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {company.companyName}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              company.isActive
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {company.isActive ? "Active" : "Inactive"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end">
-                          <button
-                            onClick={() =>
-                              toggleCompanyStatus(company.id, company.isActive)
-                            }
-                            className="hover:text-indigo-900 mr-4 bg-indigo-100 text-main px-4 py-2 rounded flex items-center justify-center"
-                            disabled={toggleLoading === company.id}
-                          >
-                            {toggleLoading === company.id ? (
-                              <CircularProgress size="sm" color="primary" />
-                            ) : company.isActive ? (
-                              "Block"
-                            ) : (
-                              "Unblock"
-                            )}
-                          </button>
-                          <button
-                            onClick={() => deleteCompany(company.id)}
-                            className="text-red-600 hover:text-red-900 mr-4 bg-red-100 px-4 py-2 rounded flex items-center justify-center"
-                            disabled={deleteLoading === company.id}
-                          >
-                            {deleteLoading === company.id ? (
-                              <CircularProgress size="sm" color="primary" />
-                            ) : (
-                              "Delete"
-                            )}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <CompaniesSection
+              companies={companies}
+              fetchCompanies={fetchCompanies}
+              refreshingCompanies={refreshingCompanies}
+              toggleCompanyStatus={toggleCompanyStatus}
+              toggleLoading={toggleLoading}
+              deleteCompany={deleteCompany}
+              deleteLoading={deleteLoading}
+            />
           )}
 
           {activeTab === "transactions" && (
-            <div className="bg-white shadow rounded-lg p-6">
-              <div className="overflow-x-auto">
-              <div className="flex justify-end mb-4">
-                  <button
-                    onClick={fetchTransactions}
-                    className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 flex items-center"
-                  >
-                    <FiRefreshCw className={`mr-2 ${refreshingTransactions ? 'animate-spin' : ''}`} />
-                    Refresh
-                  </button>
-                </div>
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date & Time
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Sender
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Amount
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Logo
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {transactions.map((transaction) => (
-                      <tr key={transaction.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {transaction.dateTime}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {transaction.sender}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {transaction.amount}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <img
-                            src={transaction.logo}
-                            alt="Company Logo"
-                            className="h-10 w-10 rounded-full"
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+             <TransactionsSection
+             transactions={transactions}
+             fetchTransactions={fetchTransactions}
+             refreshingTransactions={refreshingTransactions}
+           />
           )}
 
           {activeTab === "blocked" && (
-            <div className="bg-white shadow rounded-lg p-6">
-             
-              <div className="overflow-x-auto">
-              <div className="flex justify-end mb-4">
-                  <button
-                    onClick={fetchBlockedCompanies}
-                    className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 flex items-center"
-                  >
-                    <FiRefreshCw className={`mr-2 ${refreshingBlocked ? 'animate-spin' : ''}`} />
-                    Refresh
-                  </button>
-                </div>
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Dénomination
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {blockedCompanies.map((company) => (
-                      <tr key={company.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {company.companyName}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
-                            onClick={() =>
-                              toggleCompanyStatus(company.id, company.isActive)
-                            }
-                            className="bg-green-100 text-green-800 px-4 py-2 rounded hover:bg-green-200"
-                            disabled={toggleLoading === company.id}
-                          >
-                            {toggleLoading === company.id ? (
-                              <CircularProgress size="sm" color="primary" />
-                            ) : (
-                              "Unblock"
-                            )}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+           <BlockedCompaniesSection
+           blockedCompanies={blockedCompanies}
+           fetchBlockedCompanies={fetchBlockedCompanies}
+           refreshingBlocked={refreshingBlocked}
+           toggleCompanyStatus={toggleCompanyStatus}
+           toggleLoading={toggleLoading}
+         />
           )}
           {activeTab === "submissions" && (
-            <div className="bg-white shadow rounded-lg p-6">
-             
-              <div className="overflow-x-auto">
-              <div className="flex justify-end mb-4">
-                  <button
-                    onClick={fetchUnacceptedCompanies}
-                    className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 flex items-center"
-                  >
-                    <FiRefreshCw className={`mr-2 ${refreshingUnaccepted ? 'animate-spin' : ''}`} />
-                    Refresh
-                  </button>
-                </div>
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Dénomination
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {unacceptedCompanies.map((company) => (
-                      <tr key={company.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {company.companyName}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
-                            onClick={() => acceptCompany(company.id)}
-                            className="bg-blue-100 text-blue-800 px-4 py-2 rounded hover:bg-blue-200 flex items-center justify-center"
-                            disabled={acceptLoading === company.id}
-                          >
-                            {acceptLoading === company.id ? (
-                              <CircularProgress size="sm" color="primary" />
-                            ) : (
-                              "Accept"
-                            )}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+             <UnacceptedCompaniesSection
+             unacceptedCompanies={unacceptedCompanies}
+             fetchUnacceptedCompanies={fetchUnacceptedCompanies}
+             refreshingUnaccepted={refreshingUnaccepted}
+             acceptCompany={acceptCompany}
+             acceptLoading={acceptLoading}
+           />
           )}
           {activeTab === 'payments' && (
-            <div className="bg-white shadow rounded-lg p-6">
-              <div className="flex justify-between items-center mb-6">
-                <div className="flex space-x-4">
-                  <select 
-                    className="rounded-md border border-gray-300 p-2"
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                  >
-                    {Array.from({ length: 12 }, (_, i) => (
-                      <option key={i + 1} value={i + 1}>
-                        {new Date(2000, i, 1).toLocaleString('default', { month: 'long' })}
-                      </option>
-                    ))}
-                  </select>
-                  
-                  <select
-                    className="rounded-md border border-gray-300 p-2"
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  >
-                    {Array.from({ length: 5 }, (_, i) => {
-                      const year = new Date().getFullYear() - 2 + i;
-                      return (
-                        <option key={year} value={year}>
-                          {year}
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
-                
-                <button
-                  onClick={fetchPayments}
-                  className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 flex items-center"
-                >
-                  <FiRefreshCw className={`mr-2 ${refreshingPayments ? 'animate-spin' : ''}`} />
-                  Refresh
-                </button>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Company
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Amount
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Due Date
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {payments.map((payment) => (
-                      <tr key={payment.companyId}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {payment.companyName}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                            ${payment.status === 'paid' ? 'bg-green-100 text-green-800' : 
-                              payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                              'bg-red-100 text-red-800'}`}
-                          >
-                            {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          ${payment.amount}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(payment.dueDate).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          {payment.status !== 'paid' && (
-                            <button
-                              onClick={() => sendReminder(payment.companyId)}
-                              disabled={reminderLoading === payment.companyId}
-                              className="bg-blue-100 text-blue-800 px-4 py-2 rounded hover:bg-blue-200 disabled:opacity-50"
-                            >
-                              {reminderLoading === payment.companyId ? (
-                                <CircularProgress size="sm" color="primary" />
-                              ) : (
-                                'Send Reminder'
-                              )}
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <PaymentSection payments={payments} selectedMonth={selectedMonth} selectedYear={selectedYear} setSelectedMonth={setSelectedMonth} setSelectedYear={setSelectedYear} fetchPayments={fetchPayments} refreshingPayments={refreshingPayments} reminderLoading={reminderLoading} sendReminder={sendReminder} />
+          )}
+          {activeTab === 'payment-settings' && (
+            <PaymentSettingsSection />
           )}
         </main>
       </div>

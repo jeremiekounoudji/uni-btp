@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { Avatar } from "@nextui-org/react";
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 
 interface Testimonial {
   text: string;
@@ -13,38 +14,33 @@ interface Testimonial {
 
 const testimonials: Testimonial[] = [
   {
-    text: "Depuis que j'ai rejoint UNIE-BTP, j'ai eu accès à des formations qui m'ont permis d'innover sur mes chantiers. C'est une association incontournable pour rester à la pointe de notre secteur.",
-    author: "Jeremy D.",
-    title: "Un réseau d'ingénieurs et d'expérimentés",
-    image: "/hero-img.png"
+    text: "L'UNIE-BTP est une organisation dédiée à la protection, à l'accompagnement et à la défense des entreprises du secteur du bâtiment et des travaux publics. Leur soutien est inestimable pour notre développement.",
+    author: "M. Konan KAN",
+    title: "Président de UNIE-BTP",
+    image: "/testimonials/president.jpg"
   },
   {
-    text: "Depuis que j'ai rejoint UNIE-BTP, j'ai eu accès à des formations qui m'ont permis d'innover sur mes chantiers. C'est une association incontournable pour rester à la pointe de notre secteur.",
-    author: "Alain Jonathan",
-    title: "Un réseau d'ingénieurs et d'expérimentés",
-    image: "/hero-img.png"
-  }, {
-    text: "Depuis que j'ai rejoint UNIE-BTP, j'ai eu accès à des formations qui m'ont permis d'innover sur mes chantiers. C'est une association incontournable pour rester à la pointe de notre secteur.",
-    author: "Alain Jonathan",
-    title: "Un réseau d'ingénieurs et d'expérimentés",
-    image: "/hero-img.png"
+    text: "L'objectif de l'UNIE-BTP est de défendre les intérêts de ses membres, de promouvoir la santé et le bien-être des travailleurs du BTP. C'est une plateforme qui prône réellement la solidarité entre les acteurs du secteur.",
+    author: "Entrepreneur membre",
+    title: "Directeur d'entreprise BTP",
+    image: "/testimonials/member1.jpg"
   },
   {
-    text: "Depuis que j'ai rejoint UNIE-BTP, j'ai eu accès à des formations qui m'ont permis d'innover sur mes chantiers. C'est une association incontournable pour rester à la pointe de notre secteur.",
-    author: "Alain Jonathan",
-    title: "Un réseau d'ingénieurs et d'expérimentés",
-    image: "/hero-img.png"
+    text: "Grâce aux formations de la DGMP via UNIE-BTP, nous avons pu mieux comprendre les opportunités d'affaires dans les marchés publics. C'est un véritable accompagnement pour les entrepreneurs.",
+    author: "Participant",
+    title: "Séminaire SIGOMAP",
+    image: "/testimonials/member2.jpg"
   },
   {
-    text: "Depuis que j'ai rejoint UNIE-BTP, j'ai eu accès à des formations qui m'ont permis d'innover sur mes chantiers. C'est une association incontournable pour rester à la pointe de notre secteur.",
-    author: "Alain Jonathan",
-    title: "Un réseau d'ingénieurs et d'expérimentés",
-    image: "/hero-img.png"
-  },
-  // Ajoutez d'autres témoignages ici
+    text: "En tant que membre de l'UNIE-BTP, j'apprécie particulièrement l'entraide et la solidarité qui règnent au sein de l'organisation. C'est une union qui comprend vraiment les besoins du secteur.",
+    author: "Entrepreneur BTP",
+    title: "Membre UNIE-BTP",
+    image: "/testimonials/member3.jpg"
+  }
 ];
 
 export default function Testimonials() {
+  const router = useRouter();
   return (
     <section className="relative dark:bg-gray-100 dark:text-gray-800">
       {/* Background Image */}
@@ -92,6 +88,7 @@ export default function Testimonials() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
               viewport={{ once: true }}
+              onClick={() => router.push("/register")}
               className="bg-white text-[#0A2A3B] px-6 py-3 rounded-full hover:bg-gray-100 transition-colors"
             >
               Intégrer UNIE-BTP
@@ -123,12 +120,12 @@ export default function Testimonials() {
                       viewport={{ once: true }}
                       className="flex items-center mt-4 space-x-4"
                     >
-                      <Avatar
+                      {/* <Avatar
                         isBordered
                         radius="full"
                         size="md"
                         src={testimonial.image || "/hero-img.png"}
-                      />
+                      /> */}
                       <div>
                         <p className="text-lg font-semibold text-white">{testimonial.author}</p>
                         <p className="text-sm text-yellow-400">{testimonial.title}</p>
@@ -159,12 +156,12 @@ export default function Testimonials() {
                       viewport={{ once: true }}
                       className="flex items-center mt-4 space-x-4"
                     >
-                      <Avatar
+                      {/* <Avatar
                         isBordered
                         radius="full"
                         size="md"
                         src={testimonial.image || "/hero-img.png"}
-                      />
+                      /> */}
                       <div>
                         <p className="text-lg font-semibold text-gray-300">{testimonial.author}</p>
                         <p className="text-sm text-yellow-400">{testimonial.title}</p>

@@ -1,4 +1,6 @@
 import '@/app/globals.css'
+import CinetPayScript from '@/components/CinetPayScript';
+import WhatsAppFloat from '@/components/WhatsAppFloat';
 
 export const metadata = {
   title: 'UNIE BTP',
@@ -12,7 +14,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <WhatsAppFloat />
+        <CinetPayScript />
+      </body>
     </html>
   )
 }

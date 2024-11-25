@@ -32,7 +32,7 @@ export default function Login() {
   return (
     <div className="relative min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <Image
-        src="/hero-img.png" // Update with your image path
+        src="/unibtp.png" // Update with your image path
         width={500}
         height={300}
         alt="Login Background"
@@ -41,10 +41,10 @@ export default function Login() {
   <div className="absolute top-0 left-0 w-full h-full bg-black/20" />
 
       <div className="absolute left-[5%] right-[5%] md:left-[35%] md:right-[35%] mx-auto z-50">
-        <Card className="bg-white/70 backdrop-blur-md">
+        <Card className="bg-white">
           <CardHeader className="flex flex-col gap-3">
             <h2 className="text-center text-3xl font-extrabold text-gray-900">
-              Sign in to your account
+              Connectez-vous à votre compte
             </h2>
             {error && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
@@ -63,11 +63,11 @@ export default function Login() {
                   label="Email"
                   variant="bordered"
                   required
-                  placeholder="Enter your email"
+                  placeholder="Entrez votre email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
-                
+                  
                 <Input
                   id="password"
                   name="password"
@@ -75,7 +75,7 @@ export default function Login() {
                   label="Password"
                   variant="bordered"
                   required
-                  placeholder="Enter your password"
+                  placeholder="Entrez votre mot de passe"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -92,12 +92,12 @@ export default function Login() {
               </Button>
 
               <div className="text-sm text-center">
-                <span>Don't have an account? </span>
+                <span>Vous n'avez pas de compte? </span>
                 <Link
                   href="/register"
                   className="font-medium text-main hover:text-indigo-500"
                 >
-                  Register here
+                  S'inscrire ici
                 </Link>
               </div>
             </form>

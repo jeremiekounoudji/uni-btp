@@ -74,7 +74,7 @@ export default function FAQ() {
           className="mt-12 text-center"
         >
           <a
-            href="#"
+            href="/register"
             className="inline-block rounded bg-yellow-400 px-12 py-3 text-sm font-medium text-gray-900 transition hover:bg-yellow-500 focus:outline-none focus:ring focus:ring-yellow-400"
           >
             Rejoignez UNIE-BTP

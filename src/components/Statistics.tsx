@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 interface Stat {
   number: string;
@@ -10,24 +11,25 @@ interface Stat {
 
 const stats: Stat[] = [
   {
-    number: "15",
-    label: "Années d'expérience",
+    number: "67",
+    label: "Entrepreneurs membres",
   },
   {
-    number: "59",
-    label: "Constructions publiques et privées",
+    number: "29",
+    label: "Participants au séminaire SIGOMAP",
   },
   {
-    number: "59",
-    label: "Ingénieurs",
+    number: "2023",
+    label: "Année de création",
   },
   {
-    number: "15",
-    label: "Domaines d'intervention",
+    number: "3",
+    label: "Axes d'intervention",
   },
 ];
 
 export default function Statistics() {
+  const router = useRouter();
   return (
     <section className="bg-[#0A2A3B]">
       <div className="w-screen">
@@ -92,12 +94,14 @@ export default function Statistics() {
                 transition={{ duration: 0.5, delay: 0.4 }}
                 className="flex flex-row gap-4"
               >
-                <button className="bg-[#0A2A3B] text-white px-6 py-3 rounded-full hover:bg-gray-800 transition-colors">
+                <button 
+                  onClick={() => router.push("/register")}
+                className="bg-[#0A2A3B] text-white px-6 py-3 rounded-full hover:bg-gray-800 transition-colors">
                   Intégrer UNIE-BTP
                 </button>
-                <button className="border border-[#0A2A3B] text-[#0A2A3B] px-6 py-3 rounded-full hover:bg-[#0A2A3B] hover:text-white transition-colors">
+                {/* <button className="border border-[#0A2A3B] text-[#0A2A3B] px-6 py-3 rounded-full hover:bg-[#0A2A3B] hover:text-white transition-colors">
                   Nous contacter
-                </button>
+                </button> */}
               </motion.div>
             </motion.div>
           </div>
@@ -112,7 +116,7 @@ export default function Statistics() {
             <div className="relative rounded-lg overflow-hidden h-full w-full shadow-xl transition-transform duration-300 hover:scale-105">
               <div className="absolute inset-0 bg-black/10 z-10"></div>
               <Image
-                src="/hero-img.png"
+                src="/unie-en-chiffre.jpg"
                 alt="Construction worker"
                 fill
                 className="object-cover"

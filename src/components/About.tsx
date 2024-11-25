@@ -9,19 +9,19 @@ export default function About() {
       title: "Qui Sommes-nous?",
       subtitle: "L'Union Solidaire des Entrepreneurs du BTP",
       description: "L'UNIE-BTP est une organisation dédiée à la protection, à l'accompagnement et à la défense des droits des entreprises du bâtiment en Côte d'Ivoire. Face aux défis actuels du secteur qui ne peuvent plus être relevés individuellement, nous nous positionnons comme porte-parole en rassemblant les forces vives du métier.",
-      image: "/hero-img.png"
+      image: "/unibtp.png"
     },
     {
       title: "Notre Mission",
       subtitle: "Défendre et Soutenir",
       description: "Notre mission est de défendre les intérêts de nos membres, promouvoir la santé et le bien-être des travailleurs du BTP, et mettre en place des fonds de garantie pour soutenir les entreprises du secteur. Nous croyons en la force du collectif pour relever les défis de notre industrie.",
-      image: "/hero-img.png"
+      image: "/blog-7.jpg"
     },
     {
       title: "Nos Services",
       subtitle: "Un Accompagnement Complet",
       description: "Nous proposons une gamme complète de services : mutuelle santé, gestion des retraites, formation et gestion RH, accompagnement au financement, gestion comptable et contentieux des impayés. Notre fonds de solidarité assure un soutien concret à nos membres.",
-      image: "/hero-img.png"
+      image: "/blog-1.jpg"
     }
   ]
 

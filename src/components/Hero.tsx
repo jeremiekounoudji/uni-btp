@@ -2,8 +2,10 @@
 
 import Image from 'next/image'
 import { motion } from 'framer-motion'
+import { useRouter } from 'next/navigation';
 
 export default function Hero() {
+  const router = useRouter();
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
@@ -49,7 +51,9 @@ export default function Hero() {
             transition={{ duration: 0.5, delay: 0.6 }}
             className="flex gap-4"
           >
-            <button className="bg-white text-black px-6 py-3 rounded-full">
+            <button
+              onClick={() => router.push("/register")}
+              className="bg-white text-black px-6 py-3 rounded-full">
               Rejoignez-nous
             </button>
             <button onClick={() => scrollToSection('about')} className="border border-white text-white px-6 py-3 rounded-full">
@@ -58,8 +62,8 @@ export default function Hero() {
           </motion.div>
         </div>
         <motion.div
-          initial={{ opacity: 0, x: 100 }}
-          whileInView={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: 100 }}
+          whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           className="hidden md:block relative h-[100vh]"
         >
