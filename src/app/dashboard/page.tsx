@@ -88,35 +88,6 @@ export default function Dashboard() {
   const { user, authLoading } = useAuth();
   const router = useRouter();
 
-
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      router.push('/'); // Redirect to home page
-      toast.success('Déconnexion réussie');
-    } catch (error) {
-      toast.error('Erreur lors de la déconnexion');
-    }
-  };
- 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/');
-    }
-  }, [user, authLoading, router]);
-  // loading state spinn display
-  if (authLoading) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null; // Will redirect via useEffect
-  }
-
   // feach data from firestore
   const fetchData = useCallback(async () => {
     try {
@@ -158,6 +129,25 @@ export default function Dashboard() {
       setLoading(false);
     }
   }, [router]); 
+
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/');
+    }
+  }, [user, authLoading, router]);
+  // loading state spinn display
+  if (authLoading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // Will redirect via useEffect
+  }
 
 
   useEffect(() => {
@@ -248,6 +238,16 @@ export default function Dashboard() {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      router.push('/'); // Redirect to home page
+      toast.success('Déconnexion réussie');
+    } catch (error) {
+      toast.error('Erreur lors de la déconnexion');
+    }
+  };
+ 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar className="bg-white border-b">
