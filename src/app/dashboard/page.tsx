@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
@@ -83,60 +83,58 @@ export default function Dashboard() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
   
   const { user, authLoading } = useAuth();
   const router = useRouter();
 
-  // feach data from firestore
-  const fetchData = useCallback(async () => {
-    try {
-      // const user = auth.currentUser;
-      console.log(" log of the current user", user);
-      if (!user) {
-        router.push('/');
-        return;
-      }
-
-      // Fetch company data
-      const companyDoc = await getDoc(doc(db, 'companies', user.uid));
-      if (companyDoc.exists()) {
-        setCompanyData({ id: companyDoc.id, ...companyDoc.data() } as Company);
-      }
-
-      // Fetch payments
-      const paymentsQuery = query(
-        collection(db, 'payments'),
-        where('companyId', '==', user.uid)
-      );
-      const paymentsSnapshot = await getDocs(paymentsQuery);
-      const paymentsData = paymentsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Payment[];
-      setPayments(paymentsData);
-
-      // Fetch settings
-      const settingsDoc = await getDoc(doc(db, 'settings', 'payments'));
-      if (settingsDoc.exists()) {
-        setSettings(settingsDoc.data() as Settings);
-      }
-
-    } catch (err: any) {
-      setError(err.message);
-      toast.error("Error loading data");
-    } finally {
-      setLoading(false);
-    }
-  }, [router]); 
-
-
+  // First useEffect for auth check
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/');
     }
   }, [user, authLoading, router]);
-  // loading state spinn display
+
+  // Separate useEffect for data fetching
+  useEffect(() => {
+    async function fetchData() {
+      if (!user) return;
+      
+      try {
+        // Fetch company data
+        const companyDoc = await getDoc(doc(db, 'companies', user.uid));
+        if (companyDoc.exists()) {
+          setCompanyData({ id: companyDoc.id, ...companyDoc.data() } as Company);
+        }
+
+        // Fetch payments
+        const paymentsQuery = query(
+          collection(db, 'payments'),
+          where('companyId', '==', user.uid)
+        );
+        const paymentsSnapshot = await getDocs(paymentsQuery);
+        const paymentsData = paymentsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Payment[];
+        setPayments(paymentsData);
+
+        // Fetch settings
+        const settingsDoc = await getDoc(doc(db, 'settings', 'payments'));
+        if (settingsDoc.exists()) {
+          setSettings(settingsDoc.data() as Settings);
+        }
+      } catch (err: any) {
+        setError(err.message);
+        toast.error("Error loading data");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, [user]);
+
+  // Loading state
   if (authLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center">
@@ -148,12 +146,6 @@ export default function Dashboard() {
   if (!user) {
     return null; // Will redirect via useEffect
   }
-
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
 
   const handlePayment = async () => {
     if (!settings || !companyData) return;
@@ -208,7 +200,7 @@ export default function Dashboard() {
 
             toast.success("Paiement effectué avec succès");
             setShowPaymentModal(false);
-            fetchData(); // Refresh data
+           router.refresh();
           } catch (err) {
             console.log('Error updating payment data:', err);
             toast.error("Erreur lors de la mise à jour des données");
