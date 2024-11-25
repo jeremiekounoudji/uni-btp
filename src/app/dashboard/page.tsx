@@ -5,6 +5,7 @@ import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/AuthProvider';
 import { 
   Navbar, 
   NavbarBrand, 
@@ -28,6 +29,7 @@ import {
   TableRow,
   TableCell,
   Input,
+  Spinner,
   Chip
 } from "@nextui-org/react";
 import { toast } from 'sonner';
@@ -81,6 +83,9 @@ export default function Dashboard() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  
+  const { user, authLoading } = useAuth();
   const router = useRouter();
 
 
@@ -94,10 +99,28 @@ export default function Dashboard() {
     }
   };
  
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/');
+    }
+  }, [user, authLoading, router]);
+  // loading state spinn display
+  if (authLoading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
+  if (!user) {
+    return null; // Will redirect via useEffect
+  }
+
+  // feach data from firestore
   const fetchData = useCallback(async () => {
     try {
-      const user = auth.currentUser;
+      // const user = auth.currentUser;
       console.log(" log of the current user", user);
       if (!user) {
         router.push('/');
@@ -169,7 +192,7 @@ export default function Dashboard() {
         customer_phone_number: companyData.ceo.phone,
         customer_address: companyData.contact.address,
         customer_city: companyData.contact.city,
-        customer_country: "CI",
+        customer_country: "BJ",
         customer_state: companyData.contact.city,
         customer_zip_code: "",
       });
