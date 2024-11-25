@@ -1,6 +1,8 @@
 import '@/app/globals.css'
 import CinetPayScript from '@/components/CinetPayScript';
 import WhatsAppFloat from '@/components/WhatsAppFloat';
+import { AuthProvider } from '@/components/AuthProvider';
+import { NextUIProvider } from '@nextui-org/react';
 
 export const metadata = {
   title: 'UNIE BTP',
@@ -14,8 +16,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        {children}
+      <body className="overflow-x-hidden min-h-screen relative">
+        <AuthProvider>
+          <NextUIProvider>
+            {children}
+          </NextUIProvider>
+        </AuthProvider>
         <WhatsAppFloat />
         <CinetPayScript />
       </body>
