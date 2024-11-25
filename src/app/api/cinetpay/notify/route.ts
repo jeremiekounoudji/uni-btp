@@ -2,9 +2,24 @@ import { db } from '@/lib/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { NextRequest, NextResponse } from 'next/server';
 
+// Define CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+// Handle OPTIONS request (preflight)
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 export async function GET() {
   // CinetPay pings this endpoint to verify availability
-  return NextResponse.json({ message: 'Notification endpoint available' });
+  return NextResponse.json(
+    { message: 'Notification endpoint available' },
+    { headers: corsHeaders }
+  );
 }
 
 export async function POST(req: NextRequest) {
@@ -43,12 +58,18 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    // Return 200 OK as required by CinetPay
-    return NextResponse.json({ message: 'Notification processed' });
+    // Return 200 OK with CORS headers
+    return NextResponse.json(
+      { message: 'Notification processed' },
+      { headers: corsHeaders }
+    );
 
   } catch (error) {
     console.error('CinetPay notification error:', error);
-    // Still return 200 to acknowledge receipt
-    return NextResponse.json({ error: 'Internal server error' }, { status: 200 });
+    // Return 200 with CORS headers even on error
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 200, headers: corsHeaders }
+    );
   }
 } 
