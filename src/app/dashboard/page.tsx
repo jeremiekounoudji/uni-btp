@@ -35,6 +35,7 @@ import {
 import { toast } from 'sonner';
 import { FiEdit2, FiCreditCard } from 'react-icons/fi';
 import { CINETPAY_CONFIG } from '@/lib/cinetpay';
+import PaymentModal from '@/components/PaymentModal';
 
 interface Company {
   id: string;
@@ -354,33 +355,12 @@ export default function Dashboard() {
       </div>
 
       {/* Payment Modal */}
-      <Modal 
-        isOpen={showPaymentModal} 
-        onOpenChange={setShowPaymentModal}
-      >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>Faire un paiement</ModalHeader>
-              <ModalBody>
-                <div className="space-y-4">
-                  <p>Montant à payer: {settings?.amount} FCFA</p>
-                  <p>Fréquence de paiement: {settings?.frequency}</p>
-                  <p>Date d'échéance: {settings?.dueDay}</p>
-                </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button color="danger" variant="light" onPress={onClose}>
-                  Annuler
-                </Button>
-                <Button color="primary" onPress={handlePayment}>
-                  Continuer le paiement
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+      <PaymentModal 
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        settings={settings}
+        companyData={companyData}
+      />
 
       {/* Edit Profile Modal */}
       {/* ... (Keep your existing edit modal code) ... */}
