@@ -1,15 +1,33 @@
 import { db } from '@/lib/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, setDoc } from 'firebase/firestore';
 import { NextRequest, NextResponse } from 'next/server';
+
+// Define CORS headers
+const corsHeaders = {
+    'Access-Control-Allow-Origin': 'https://checkout.cinetpay.com',  // Only allow CinetPay domain
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Credentials': 'true'
+  };
+
+// Handle OPTIONS request (preflight)
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
 
 export async function GET() {
   // CinetPay pings this endpoint to verify availability
-  return NextResponse.json({ message: 'Notification endpoint available' });
+  return NextResponse.json(
+    { message: 'Notification endpoint available' },
+    { headers: corsHeaders }
+  );
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    console.log("log to check backend code ",body);
+    
     
     const {
       cpm_trans_id,
@@ -29,26 +47,39 @@ export async function POST(req: NextRequest) {
       status: cpm_error_message
     });
 
-    // Update payment status in Firestore
+    // Create new payment document
     const paymentRef = doc(db, 'payments', cpm_trans_id);
-    await updateDoc(paymentRef, {
+    await setDoc(paymentRef, {
+      id: cpm_trans_id,
+      userId: cpm_custom, // Assuming cpm_custom contains the userId
       status: cpm_error_message === 'PAYMENT_SUCCESSFUL' ? 'completed' : 'failed',
+      createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       paymentDetails: {
         amount: cpm_amount,
         currency: cpm_currency,
         paymentDate: cpm_payment_date,
         paymentConfig: cpm_payment_config,
+        siteId: cpm_site_id,
         metadata: cpm_custom
       }
     });
 
-    // Return 200 OK as required by CinetPay
-    return NextResponse.json({ message: 'Notification processed' });
+    // Return 200 OK with CORS headers
+    return NextResponse.json(
+      { message: 'Notification processed' },
+      { 
+        status: 200,  // Always return 200 as required by CinetPay
+        headers: corsHeaders 
+      }
+    );
 
   } catch (error) {
     console.error('CinetPay notification error:', error);
-    // Still return 200 to acknowledge receipt
-    return NextResponse.json({ error: 'Internal server error' }, { status: 200 });
+    // Return 200 with CORS headers even on error
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 200, headers: corsHeaders }
+    );
   }
 } 

@@ -110,7 +110,7 @@ export default function Register() {
           industry: formData.industry,
           foundedDate: formData.foundedDate,
           isActive: true,
-          isAccepted: false,
+          isAccepted: true,
           contact: {
             email: formData.email,
             phone: formData.phone,

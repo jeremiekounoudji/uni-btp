@@ -35,6 +35,9 @@ import {
 import { toast } from 'sonner';
 import { FiEdit2, FiCreditCard } from 'react-icons/fi';
 import { CINETPAY_CONFIG } from '@/lib/cinetpay';
+import PaymentModal from '@/components/PaymentModal';
+import { Settings } from "@/types/index";
+
 
 interface Company {
   id: string;
@@ -69,11 +72,7 @@ interface Payment {
   status: string;
 }
 
-interface Settings {
-  amount: number;
-  frequency: string;
-  dueDay: number;
-}
+
 
 export default function Dashboard() {
   const [companyData, setCompanyData] = useState<Company | null>(null);
@@ -108,7 +107,7 @@ export default function Dashboard() {
 
         // Fetch payments
         const paymentsQuery = query(
-          collection(db, 'payments'),
+          collection(db, 'transactions'),
           where('companyId', '==', user.uid)
         );
         const paymentsSnapshot = await getDocs(paymentsQuery);
@@ -239,6 +238,33 @@ export default function Dashboard() {
       toast.error('Erreur lors de la déconnexion');
     }
   };
+
+
+
+  // blackec company message
+  if (!companyData?.isActive) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-8">
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader className="text-2xl font-bold text-red-500">
+            Compte Bloqué
+          </CardHeader>
+          <CardBody>
+            <p className="text-gray-700">
+              Votre compte entreprise est actuellement bloqué. Veuillez contacter l&apos;administrateur pour plus d&apos;informations et pour résoudre ce problème.
+            </p>
+            <Button 
+              color="primary" 
+              className="mt-4"
+              onClick={handleSignOut}
+            >
+              Déconnexion
+            </Button>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
  
   return (
     <div className="min-h-screen bg-gray-50">
@@ -354,33 +380,12 @@ export default function Dashboard() {
       </div>
 
       {/* Payment Modal */}
-      <Modal 
-        isOpen={showPaymentModal} 
-        onOpenChange={setShowPaymentModal}
-      >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>Faire un paiement</ModalHeader>
-              <ModalBody>
-                <div className="space-y-4">
-                  <p>Montant à payer: {settings?.amount} FCFA</p>
-                  <p>Fréquence de paiement: {settings?.frequency}</p>
-                  <p>Date d'échéance: {settings?.dueDay}</p>
-                </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button color="danger" variant="light" onPress={onClose}>
-                  Annuler
-                </Button>
-                <Button color="primary" onPress={handlePayment}>
-                  Continuer le paiement
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+      <PaymentModal 
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        settings={settings }
+        companyData={companyData}
+      />
 
       {/* Edit Profile Modal */}
       {/* ... (Keep your existing edit modal code) ... */}
