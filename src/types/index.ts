@@ -9,3 +9,9 @@ export interface Feature {
   description: string;
   icon: string;
 } 
+
+export interface Settings {
+  amount: number;
+  frequency: string;
+  dueDay: number;
+}

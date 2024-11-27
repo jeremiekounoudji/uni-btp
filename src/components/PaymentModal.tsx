@@ -3,7 +3,14 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { CINETPAY_CONFIG } from '../lib/cinetpay';
+import { doc, setDoc,updateDoc } from 'firebase/firestore';
+import { db, auth } from '@/lib/firebase';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@nextui-org/react";
+import { Settings } from "@/types/index";
+
+
+
+
 
 export default function PaymentModal({ isOpen, onClose, settings, companyData }: { isOpen: boolean, onClose: () => void, settings: any, companyData: any }) {
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
@@ -79,7 +86,7 @@ export default function PaymentModal({ isOpen, onClose, settings, companyData }:
 
       window.CinetPay.getCheckout({
         transaction_id: transactionId,
-        amount: 100,
+        amount: settings.amount,
         currency: 'XOF',
         channels: 'ALL',
         description: `Cotisation ${companyData.companyName}`,
@@ -95,14 +102,50 @@ export default function PaymentModal({ isOpen, onClose, settings, companyData }:
       });
 
       window.CinetPay.waitResponse(async (data: any) => {
-        if (data.status === "ACCEPTED") {
-          // Handle success
-          toast.success("Paiement réussi!");
-        } else {
-          toast.error("Le paiement a échoué");
+        try {
+          const currentUser = auth.currentUser;
+          if (!currentUser) {
+            toast.error("Erreur d'authentification");
+            return;
+          }
+      
+          // Create payment document
+         
+          
+      
+          if (data.status === "ACCEPTED") {
+            // create the transaction in the db if done
+            const transactionRef = doc(db, 'transactions', data.transaction_id);
+            await setDoc(transactionRef, {
+              id: data.transaction_id,
+              userId: currentUser.uid,
+              status: data.status === "ACCEPTED" ? 'completed' : 'failed',
+              dateTime: new Date().toISOString(),
+              amount: data.amount,
+              currency: data.currency,
+              paymentMethod: data.payment_method || 'cinetpay',
+              metadata: data.metadata || {},
+              type: 'payment' // to distinguish from other types of transactions
+            });
+            console.log("check paymnt doc",transactionRef.id);
+
+            // :update total payment
+            const newTotal = (companyData.totalCotisation || 0) + settings.amount;
+            await updateDoc(doc(db, 'companies', companyData.id), {
+              totalCotisation: newTotal
+            }, );
+            // dsplay toast
+            toast.success("Paiement réussi!");
+          } else {
+            toast.error("Le paiement a échoué");
+          }
+        } catch (error) {
+          console.error('Payment recording error:', error);
+          toast.error("Erreur lors de l'enregistrement du paiement");
+        } finally {
+          setIsProcessing(false);
+          onClose();
         }
-        setIsProcessing(false);
-        onClose();
       });
 
       window.CinetPay.onError((error: any) => {

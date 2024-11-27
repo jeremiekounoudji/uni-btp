@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, setDoc } from 'firebase/firestore';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Define CORS headers
@@ -26,6 +26,8 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    console.log("log to check backend code ",body);
+    
     
     const {
       cpm_trans_id,
@@ -45,19 +47,23 @@ export async function POST(req: NextRequest) {
       status: cpm_error_message
     });
 
-    // Update payment status in Firestore
+    // Create new payment document
     const paymentRef = doc(db, 'payments', cpm_trans_id);
-    await updateDoc(paymentRef, {
+    await setDoc(paymentRef, {
+      id: cpm_trans_id,
+      userId: cpm_custom, // Assuming cpm_custom contains the userId
       status: cpm_error_message === 'PAYMENT_SUCCESSFUL' ? 'completed' : 'failed',
+      createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       paymentDetails: {
         amount: cpm_amount,
         currency: cpm_currency,
         paymentDate: cpm_payment_date,
         paymentConfig: cpm_payment_config,
+        siteId: cpm_site_id,
         metadata: cpm_custom
       }
-    },);
+    });
 
     // Return 200 OK with CORS headers
     return NextResponse.json(

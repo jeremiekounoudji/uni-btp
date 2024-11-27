@@ -31,8 +31,8 @@ import UnacceptedCompaniesSection from "@/components/admin/UnacceptedCompaniesSe
 import BlockedCompaniesSection from "@/components/admin/BlockedCompaniesSection";
 import TransactionsSection from "@/components/admin/TransactionsSection";
 import PaymentSettingsSection from "@/components/admin/PaymentSettingsSection";
-import CompaniesSection from '@/components/admin/CompaniesSection';
-import Sidebar from '@/components/admin/Sidebar';
+import CompaniesSection from "@/components/admin/CompaniesSection";
+import Sidebar from "@/components/admin/Sidebar";
 
 interface Company {
   id: string;
@@ -62,7 +62,7 @@ interface Company {
   // Add other relevant fields
 }
 
-type PaymentStatus = 'paid' | 'pending' | 'overdue';
+type PaymentStatus = "paid" | "pending" | "overdue";
 
 interface CompanyPayment {
   companyId: string;
@@ -79,7 +79,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("all");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [blockedCompanies, setBlockedCompanies] = useState<Company[]>([]);
   const [toggleLoading, setToggleLoading] = useState<string | null>(null);
@@ -125,7 +125,6 @@ export default function AdminDashboard() {
       setError("Failed to load companies");
       setRefreshingCompanies(false);
     } finally {
-
       setLoading(false);
       setRefreshingCompanies(false);
     }
@@ -149,32 +148,32 @@ export default function AdminDashboard() {
       setRefreshingBlocked(false);
     }
   };
-  const fetchTransactions = async () => {
-    try {
-      setRefreshingTransactions(true);
-      const querySnapshot = await getDocs(collection(db, "transactions"));
-      const transactionData: any[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        const formattedDate = new Intl.DateTimeFormat("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: true,
-        }).format(new Date(data.dateTime));
+  // const fetchTransactions = async () => {
+  //   try {
+  //     setRefreshingTransactions(true);
+  //     const querySnapshot = await getDocs(collection(db, "transactions"));
+  //     const transactionData: any[] = [];
+  //     querySnapshot.forEach((doc) => {
+  //       const data = doc.data();
+  //       const formattedDate = new Intl.DateTimeFormat("en-US", {
+  //         year: "numeric",
+  //         month: "long",
+  //         day: "numeric",
+  //         hour: "2-digit",
+  //         minute: "2-digit",
+  //         second: "2-digit",
+  //         hour12: true,
+  //       }).format(new Date(data.dateTime));
 
-        transactionData.push({ id: doc.id, ...data, dateTime: formattedDate });
-      });
-        setTransactions(transactionData);
-      setRefreshingTransactions(false);
-    } catch (err) {
-      setError("Failed to load transactions");
-      setRefreshingTransactions(false);
-    }
-  };
+  //       transactionData.push({ id: doc.id, ...data, dateTime: formattedDate });
+  //     });
+  //     setTransactions(transactionData);
+  //     setRefreshingTransactions(false);
+  //   } catch (err) {
+  //     setError("Failed to load transactions");
+  //     setRefreshingTransactions(false);
+  //   }
+  // };
   // fetchUnacceptedCompanies
   const fetchUnacceptedCompanies = async () => {
     try {
@@ -218,7 +217,6 @@ export default function AdminDashboard() {
     }
   };
 
-  
   const deleteCompany = async (companyId: string) => {
     setDeleteLoading(companyId);
     try {
@@ -237,19 +235,17 @@ export default function AdminDashboard() {
     fetchCompanies();
   }, []);
 
-  useEffect(() => {
-    fetchTransactions();
-  }, []);
+  // useEffect(() => {
+  //   fetchTransactions();
+  // }, []);
 
   useEffect(() => {
     fetchBlockedCompanies();
   }, []);
 
   useEffect(() => {
-    
     fetchUnacceptedCompanies();
   }, []);
-
 
   const getCounts = async () => {
     try {
@@ -294,66 +290,66 @@ export default function AdminDashboard() {
     getCounts();
   }, []);
 
-  const fetchPayments = useCallback(async () => {
-    setRefreshingPayments(true);
-    try {
-      const q = query(
-        collection(db, 'payments'),
-        where('year', '==', selectedYear),
-        where('month', '==', selectedMonth)
-      );
-      
-      const snapshot = await getDocs(q);
-      const paymentData: CompanyPayment[] = [];
-      
-      snapshot.forEach((doc) => {
-        paymentData.push(doc.data() as CompanyPayment);
-      });
-      
-      setPayments(paymentData);
-      setPendingPaymentsCount(
-        paymentData.filter(p => p.status !== 'paid').length
-      );
-    } catch (err) {
-      setError('Failed to load payments');
-    } finally {
-      setRefreshingPayments(false);
-    }
-  }, [selectedMonth, selectedYear]);
+  // const fetchPayments = useCallback(async () => {
+  //   setRefreshingPayments(true);
+  //   try {
+  //     const q = query(
+  //       collection(db, 'payments'),
+  //       where('year', '==', selectedYear),
+  //       where('month', '==', selectedMonth)
+  //     );
 
-  const sendReminder = async (companyId: string) => {
-    setReminderLoading(companyId);
-    try {
-      const company = payments.find(p => p.companyId === companyId);
-      if (!company) return;
+  //     const snapshot = await getDocs(q);
+  //     const paymentData: CompanyPayment[] = [];
 
-      // Send email using your preferred email service
-      // Example using a custom API endpoint:
-      await fetch('/api/send-payment-reminder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: company.ceoEmail,
-          companyName: company.companyName,
-          amount: company.amount,
-          dueDate: company.dueDate
-        })
-      });
+  //     snapshot.forEach((doc) => {
+  //       paymentData.push(doc.data() as CompanyPayment);
+  //     });
 
-      // Show success message
-      // You might want to add a toast notification here
-    } catch (err) {
-      setError('Failed to send reminder');
-    } finally {
-      setReminderLoading(null);
-    }
-  };
+  //     setPayments(paymentData);
+  //     setPendingPaymentsCount(
+  //       paymentData.filter(p => p.status !== 'paid').length
+  //     );
+  //   } catch (err) {
+  //     setError('Failed to load payments');
+  //   } finally {
+  //     setRefreshingPayments(false);
+  //   }
+  // }, [selectedMonth, selectedYear]);
 
-  useEffect(() => {
-    if (activeTab === 'payments') {
-      fetchPayments();
-    }
-  }, [selectedMonth, selectedYear, activeTab, fetchPayments]);
+  // const sendReminder = async (companyId: string) => {
+  //   setReminderLoading(companyId);
+  //   try {
+  //     const company = payments.find(p => p.companyId === companyId);
+  //     if (!company) return;
+
+  //     // Send email using your preferred email service
+  //     // Example using a custom API endpoint:
+  //     await fetch('/api/send-payment-reminder', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({
+  //         email: company.ceoEmail,
+  //         companyName: company.companyName,
+  //         amount: company.amount,
+  //         dueDate: company.dueDate
+  //       })
+  //     });
+
+  //     // Show success message
+  //     // You might want to add a toast notification here
+  //   } catch (err) {
+  //     setError('Failed to send reminder');
+  //   } finally {
+  //     setReminderLoading(null);
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   if (activeTab === 'payments') {
+  //     fetchPayments();
+  //   }
+  // }, [selectedMonth, selectedYear, activeTab, fetchPayments]);
 
   const sidebarItems = [
     { id: "all", label: "Tous", icon: <FiUsers />, count: companiesCount },
@@ -369,23 +365,23 @@ export default function AdminDashboard() {
       icon: <FiDollarSign />,
       count: blockedCompaniesCount,
     },
+    // {
+    //   id: "submissions",
+    //   label: "Validation en attente",
+    //   icon: <FiFileText />,
+    //   count: unacceptedCompaniesCount,
+    // },
+    // {
+    //   id: "payments",
+    //   label: "Monthly Payments",
+    //   icon: <FiDollarSign />,
+    //   count: pendingPaymentsCount,
+    // },
     {
-      id: "submissions",
-      label: "Validation en attente",
-      icon: <FiFileText />,
-      count: unacceptedCompaniesCount,
-    },
-    {
-      id: 'payments',
-      label: 'Monthly Payments',
-      icon: <FiDollarSign />,
-      count: pendingPaymentsCount
-    },
-    {
-      id: 'payment-settings',
-      label: 'Payment Settings',
+      id: "payment-settings",
+      label: "Param cotisations",
       icon: <FiSettings />,
-      count: 0
+      count: 0,
     },
   ];
 
@@ -436,67 +432,61 @@ export default function AdminDashboard() {
   // ... existing code ...
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      <div className="flex pt-2 pb-2 h-screen">
-        <Sidebar
-          items={sidebarItems}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          isSidebarOpen={isSidebarOpen}
-          handleLogout={handleLogout}
-        />
-        
-        <main
-          className={`flex-1 p-8 transition-all duration-300 ${
-            isSidebarOpen ? "lg:ml-64" : ""
-          }`}
-        >
-          {activeTab === "all" && (
-            <CompaniesSection
-              companies={companies}
-              fetchCompanies={fetchCompanies}
-              refreshingCompanies={refreshingCompanies}
-              toggleCompanyStatus={toggleCompanyStatus}
-              toggleLoading={toggleLoading}
-              deleteCompany={deleteCompany}
-              deleteLoading={deleteLoading}
-            />
-          )}
+    <div className="min-h-screen bg-gray-50">
+      <Sidebar 
+        items={sidebarItems}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
+        handleLogout={handleLogout}
+        admin="KONAN KAN"
+      />
+      
+      <main className="lg:ml-64 min-h-screen p-4">
+        {activeTab === "all" && (
+          <CompaniesSection
+            companies={companies}
+            fetchCompanies={fetchCompanies}
+            refreshingCompanies={refreshingCompanies}
+            toggleCompanyStatus={toggleCompanyStatus}
+            toggleLoading={toggleLoading}
+            deleteCompany={deleteCompany}
+            deleteLoading={deleteLoading}
+          />
+        )}
 
-          {activeTab === "transactions" && (
-             <TransactionsSection
-             transactions={transactions}
-             fetchTransactions={fetchTransactions}
-             refreshingTransactions={refreshingTransactions}
-           />
-          )}
+        {activeTab === "transactions" && (
+          <TransactionsSection
+            // transactions={transactions}
+            // fetchTransactions={fetchTransactions}
+            // refreshingTransactions={refreshingTransactions}
+          />
+        )}
 
-          {activeTab === "blocked" && (
-           <BlockedCompaniesSection
-           blockedCompanies={blockedCompanies}
-           fetchBlockedCompanies={fetchBlockedCompanies}
-           refreshingBlocked={refreshingBlocked}
-           toggleCompanyStatus={toggleCompanyStatus}
-           toggleLoading={toggleLoading}
-         />
-          )}
-          {activeTab === "submissions" && (
-             <UnacceptedCompaniesSection
-             unacceptedCompanies={unacceptedCompanies}
-             fetchUnacceptedCompanies={fetchUnacceptedCompanies}
-             refreshingUnaccepted={refreshingUnaccepted}
-             acceptCompany={acceptCompany}
-             acceptLoading={acceptLoading}
-           />
-          )}
-          {activeTab === 'payments' && (
-            <PaymentSection payments={payments} selectedMonth={selectedMonth} selectedYear={selectedYear} setSelectedMonth={setSelectedMonth} setSelectedYear={setSelectedYear} fetchPayments={fetchPayments} refreshingPayments={refreshingPayments} reminderLoading={reminderLoading} sendReminder={sendReminder} />
-          )}
-          {activeTab === 'payment-settings' && (
-            <PaymentSettingsSection />
-          )}
-        </main>
-      </div>
+        {activeTab === "blocked" && (
+          <BlockedCompaniesSection
+            blockedCompanies={blockedCompanies}
+            fetchBlockedCompanies={fetchBlockedCompanies}
+            refreshingBlocked={refreshingBlocked}
+            toggleCompanyStatus={toggleCompanyStatus}
+            toggleLoading={toggleLoading}
+          />
+        )}
+        {activeTab === "submissions" && (
+          <UnacceptedCompaniesSection
+            unacceptedCompanies={unacceptedCompanies}
+            fetchUnacceptedCompanies={fetchUnacceptedCompanies}
+            refreshingUnaccepted={refreshingUnaccepted}
+            acceptCompany={acceptCompany}
+            acceptLoading={acceptLoading}
+          />
+        )}
+        {/* {activeTab === 'payments' && (
+          <PaymentSection payments={payments} selectedMonth={selectedMonth} selectedYear={selectedYear} setSelectedMonth={setSelectedMonth} setSelectedYear={setSelectedYear} fetchPayments={fetchPayments} refreshingPayments={refreshingPayments} reminderLoading={reminderLoading} sendReminder={sendReminder} />
+        )} */}
+        {activeTab === "payment-settings" && <PaymentSettingsSection />}
+      </main>
     </div>
   );
 }
