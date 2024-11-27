@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Card, CardHeader, CardBody, Input, Button } from "@nextui-org/react";
+import ForgotPasswordModal from '@/components/ForgotPasswordModal';
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -13,6 +14,7 @@ export default function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -104,11 +106,28 @@ export default function Login() {
                 >
                   S'inscrire ici
                 </Link>
+                <div className="mt-2">
+        <Button
+          variant="light"
+          color="primary"
+          onClick={() => setShowForgotPassword(true)}
+          className="p-0"
+        >
+          Mot de passe oublié ?
+        </Button>
+      </div>
               </div>
             </form>
           </CardBody>
         </Card>
       </div>
+
+      
+
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+      />
     </div>
   )
 } 

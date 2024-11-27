@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
+import { signOut ,sendEmailVerification} from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import { 
@@ -30,13 +30,17 @@ import {
   TableCell,
   Input,
   Spinner,
+  
   Chip
 } from "@nextui-org/react";
 import { toast } from 'sonner';
-import { FiEdit2, FiCreditCard } from 'react-icons/fi';
+import { FiEdit2, FiCreditCard, FiLock } from 'react-icons/fi';
 import { CINETPAY_CONFIG } from '@/lib/cinetpay';
 import PaymentModal from '@/components/PaymentModal';
 import { Settings } from "@/types/index";
+import EditCompanyModal from '@/components/EditCompanyModal';
+import ChangePasswordModal from '@/components/ChangePasswordModal';
+import ForgotPasswordModal from '@/components/ForgotPasswordModal';
 
 
 interface Company {
@@ -82,6 +86,7 @@ export default function Dashboard() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   
   const { user, authLoading } = useAuth();
   const router = useRouter();
@@ -93,6 +98,16 @@ export default function Dashboard() {
     }
   }, [user, authLoading, router]);
 
+  // reload user
+  useEffect(() => {
+    if (user) {
+      // Reload user to get latest verification status
+      const checkVerification = async () => {
+        await user.reload();
+      };
+      checkVerification();
+    }
+  }, [user]);
   // Separate useEffect for data fetching
   useEffect(() => {
     async function fetchData() {
@@ -146,89 +161,6 @@ export default function Dashboard() {
     return null; // Will redirect via useEffect
   }
 
-  const handlePayment = async () => {
-    if (!settings || !companyData) return;
-    
-    try {
-      const transactionId = `TR${Date.now()}`;
-      
-      // Initialize CinetPay
-      CinetPay.setConfig({
-        apikey: CINETPAY_CONFIG.apikey,
-        site_id: CINETPAY_CONFIG.site_id,
-        notify_url: CINETPAY_CONFIG.notify_url,
-        mode: CINETPAY_CONFIG.mode,
-      });
-
-      // Start payment process
-      CinetPay.getCheckout({
-        transaction_id: transactionId,
-        amount: settings.amount,
-        currency: 'XOF',
-        channels: 'ALL',
-        description: `Cotisation ${companyData.companyName}`,
-        customer_name: companyData.ceo.name,
-        customer_surname: companyData.ceo.name.split(' ')[1] || '',
-        customer_email: companyData.ceo.email,
-        customer_phone_number: companyData.ceo.phone,
-        customer_address: companyData.contact.address,
-        customer_city: companyData.contact.city,
-        customer_country: "BJ",
-        customer_state: companyData.contact.city,
-        customer_zip_code: "",
-      });
-
-      // Handle payment response
-      CinetPay.waitResponse(async (data) => {
-        if (data.status === "ACCEPTED") {
-          try {
-            // Update total cotisation
-            const newTotal = (companyData.totalCotisation || 0) + settings.amount;
-            await updateDoc(doc(db, 'companies', companyData.id), {
-              totalCotisation: newTotal
-            }, );
-
-            // Add payment record
-            await addDoc(collection(db, 'payments'), {
-              companyId: companyData.id,
-              amount: settings.amount,
-              date: new Date().toISOString(),
-              status: 'successful',
-              transactionId,
-            });
-
-            toast.success("Paiement effectué avec succès");
-            setShowPaymentModal(false);
-           router.refresh();
-          } catch (err) {
-            console.log('Error updating payment data:', err);
-            toast.error("Erreur lors de la mise à jour des données");
-          }
-        } else {
-          toast.error("Le paiement a échoué");
-        }
-      });
-
-      // Handle errors
-      CinetPay.onError((error) => {
-        console.log('CinetPay error:', error);
-        toast.error("Erreur lors du paiement");
-      });
-
-      // Handle close
-      CinetPay.onClose((data) => {
-        if (data.status === "REFUSED") {
-          toast.error("Paiement annulé");
-        }
-        setShowPaymentModal(false);
-      });
-
-    } catch (err) {
-      console.log('Payment error:', err);
-      toast.error("Erreur lors de l'initialisation du paiement");
-    }
-  };
-
   const handleSignOut = async () => {
     try {
       await signOut(auth);
@@ -239,7 +171,19 @@ export default function Dashboard() {
     }
   };
 
-
+  // Add this function to refresh company data after update
+  const refreshCompanyData = async () => {
+    if (!user) return;
+    
+    try {
+      const companyDoc = await getDoc(doc(db, 'companies', user.uid));
+      if (companyDoc.exists()) {
+        setCompanyData({ id: companyDoc.id, ...companyDoc.data() } as Company);
+      }
+    } catch (err) {
+      toast.error("Error refreshing company data");
+    }
+  };
 
   // blackec company message
   if (!companyData?.isActive) {
@@ -266,6 +210,50 @@ export default function Dashboard() {
     );
   }
  
+
+  if (!user.emailVerified) {
+    const handleResendVerification = async () => {
+      try {
+        await sendEmailVerification(user);
+        toast.success(`Email de vérification envoyé dans votre boite mail. Veuillez le confirmer.`);
+      } catch (error: any) {
+        toast.error("Email non envoyé. essayer plus tard.");
+      }
+    };
+
+    return (
+      <div className="min-h-screen bg-gray-50 p-8">
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader className="text-2xl font-bold text-amber-500">
+            Email non vérifié
+          </CardHeader>
+          <CardBody>
+            <p className="text-gray-700 mb-4">
+              Pour accéder au tableau de bord, veuillez vérifier votre adresse e-mail. Un e-mail de vérification a été envoyé à {user.email}.
+            </p>
+            <p className="text-gray-700 mb-4">
+              Si vous n&apos;avez pas reçu l&apos;e-mail, vérifiez votre dossier spam ou cliquez sur le bouton ci-dessous pour renvoyer l&apos;e-mail.
+            </p>
+            <div className="flex gap-4">
+              <Button 
+                color="primary"
+                onClick={handleResendVerification}
+              >
+                Renvoyer l&apos;email de vérification
+              </Button>
+              <Button 
+                color="danger" 
+                variant="light"
+                onClick={handleSignOut}
+              >
+                Déconnexion
+              </Button>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar className="bg-white border-b">
@@ -331,6 +319,17 @@ export default function Dashboard() {
                     {companyData?.totalCotisation || 0} FCFA
                   </p>
                 </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-2">Sécurité</p>
+                  <Button
+                    color="primary"
+                    variant="flat"
+                    startContent={<FiLock />}
+                    onClick={() => setIsChangingPassword(true)}
+                  >
+                    Changer le mot de passe
+                  </Button>
+                </div>
               </div>
             </CardBody>
           </Card>
@@ -388,7 +387,21 @@ export default function Dashboard() {
       />
 
       {/* Edit Profile Modal */}
-      {/* ... (Keep your existing edit modal code) ... */}
+      <EditCompanyModal
+        isOpen={isEditing}
+        onClose={() => setIsEditing(false)}
+        company={companyData}
+        onUpdate={refreshCompanyData}
+      />
+
+      {/* Change Password Modal */}
+      {/* <ChangePasswordModal
+        isOpen={isChangingPassword}
+        onClose={() => setIsChangingPassword(false)}
+      /> */}
+      <ForgotPasswordModal isOpen={isChangingPassword} onClose={() => setIsChangingPassword(false)}/>
+
+
     </div>
   );
 }

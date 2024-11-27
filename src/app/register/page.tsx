@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword,sendEmailVerification } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -126,6 +127,8 @@ export default function Register() {
           },
           createdAt: new Date().toISOString(),
         });
+        await sendEmailVerification(userCredential.user);
+        toast.success(`Email de vérification envoyé à ${formData.email}. Veuillez le confirmer`);
         if (formData.email==process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
           router.push("/admin");
         } else {

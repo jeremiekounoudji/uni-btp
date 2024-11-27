@@ -148,32 +148,6 @@ export default function AdminDashboard() {
       setRefreshingBlocked(false);
     }
   };
-  // const fetchTransactions = async () => {
-  //   try {
-  //     setRefreshingTransactions(true);
-  //     const querySnapshot = await getDocs(collection(db, "transactions"));
-  //     const transactionData: any[] = [];
-  //     querySnapshot.forEach((doc) => {
-  //       const data = doc.data();
-  //       const formattedDate = new Intl.DateTimeFormat("en-US", {
-  //         year: "numeric",
-  //         month: "long",
-  //         day: "numeric",
-  //         hour: "2-digit",
-  //         minute: "2-digit",
-  //         second: "2-digit",
-  //         hour12: true,
-  //       }).format(new Date(data.dateTime));
-
-  //       transactionData.push({ id: doc.id, ...data, dateTime: formattedDate });
-  //     });
-  //     setTransactions(transactionData);
-  //     setRefreshingTransactions(false);
-  //   } catch (err) {
-  //     setError("Failed to load transactions");
-  //     setRefreshingTransactions(false);
-  //   }
-  // };
   // fetchUnacceptedCompanies
   const fetchUnacceptedCompanies = async () => {
     try {
@@ -234,10 +208,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchCompanies();
   }, []);
-
-  // useEffect(() => {
-  //   fetchTransactions();
-  // }, []);
+// reload user
 
   useEffect(() => {
     fetchBlockedCompanies();
@@ -289,67 +260,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     getCounts();
   }, []);
-
-  // const fetchPayments = useCallback(async () => {
-  //   setRefreshingPayments(true);
-  //   try {
-  //     const q = query(
-  //       collection(db, 'payments'),
-  //       where('year', '==', selectedYear),
-  //       where('month', '==', selectedMonth)
-  //     );
-
-  //     const snapshot = await getDocs(q);
-  //     const paymentData: CompanyPayment[] = [];
-
-  //     snapshot.forEach((doc) => {
-  //       paymentData.push(doc.data() as CompanyPayment);
-  //     });
-
-  //     setPayments(paymentData);
-  //     setPendingPaymentsCount(
-  //       paymentData.filter(p => p.status !== 'paid').length
-  //     );
-  //   } catch (err) {
-  //     setError('Failed to load payments');
-  //   } finally {
-  //     setRefreshingPayments(false);
-  //   }
-  // }, [selectedMonth, selectedYear]);
-
-  // const sendReminder = async (companyId: string) => {
-  //   setReminderLoading(companyId);
-  //   try {
-  //     const company = payments.find(p => p.companyId === companyId);
-  //     if (!company) return;
-
-  //     // Send email using your preferred email service
-  //     // Example using a custom API endpoint:
-  //     await fetch('/api/send-payment-reminder', {
-  //       method: 'POST',
-  //       headers: { 'Content-Type': 'application/json' },
-  //       body: JSON.stringify({
-  //         email: company.ceoEmail,
-  //         companyName: company.companyName,
-  //         amount: company.amount,
-  //         dueDate: company.dueDate
-  //       })
-  //     });
-
-  //     // Show success message
-  //     // You might want to add a toast notification here
-  //   } catch (err) {
-  //     setError('Failed to send reminder');
-  //   } finally {
-  //     setReminderLoading(null);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   if (activeTab === 'payments') {
-  //     fetchPayments();
-  //   }
-  // }, [selectedMonth, selectedYear, activeTab, fetchPayments]);
 
   const sidebarItems = [
     { id: "all", label: "Tous", icon: <FiUsers />, count: companiesCount },
