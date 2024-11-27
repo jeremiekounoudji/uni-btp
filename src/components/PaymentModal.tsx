@@ -96,7 +96,7 @@ export default function PaymentModal({ isOpen, onClose, settings, companyData }:
         customer_phone_number: companyData.ceo.phone,
         customer_address: companyData.contact.address,
         customer_city: companyData.contact.city,
-        customer_country: "BJ",
+        customer_country: "CI",
         customer_state: companyData.contact.city,
         customer_zip_code: "",
       });

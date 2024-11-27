@@ -126,7 +126,12 @@ export default function Register() {
           },
           createdAt: new Date().toISOString(),
         });
-        router.push("/company-info");
+        if (formData.email==process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+          router.push("/admin");
+        } else {
+          router.push("/dashboard");
+        }
+        // router.push("/company-info");
       }
     } catch (err: any) {
       console.log(err.message);
@@ -163,13 +168,6 @@ export default function Register() {
     setShowTermsModal(true);
   };
 
-  const handleFinalSubmit = async () => {
-    setShowTermsModal(false);
-    // Your existing handleSubmit logic here
-    setLoading(true);
-    // ... rest of your submission code
-    // handleSubmit(e);
-  };
 
   return (
     <div className="relative min-h-screen  py-12 px-4 sm:px-6 lg:px-8">

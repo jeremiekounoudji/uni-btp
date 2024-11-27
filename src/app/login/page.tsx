@@ -21,7 +21,12 @@ export default function Login() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password)
-      router.push('/dashboard') // Redirect to home page after successful login
+      if (email==process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+        router.push("/admin");
+      } else {
+        router.push("/dashboard");
+      }
+      // router.push('/dashboard') // Redirect to home page after successful login
     } catch (err: any) {
       setError(err.message)
     } finally {
