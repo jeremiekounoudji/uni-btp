@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 interface PaymentSettings {
   amount: number;
-  frequency: 'monthly' | 'quarterly' | 'annually';
+  frequency: 'mensuel' | 'trimestriel' | 'annuel';
   dueDay: number;
 }
 
@@ -26,7 +26,7 @@ function PaymentSettingsSection() {
       } else {
         setSettings({
           amount: 0,
-          frequency: 'monthly',
+          frequency: 'mensuel',
           dueDay: 1
         });
       }
@@ -34,7 +34,7 @@ function PaymentSettingsSection() {
       toast.error('Failed to load payment settings');
       setSettings({
         amount: 0,
-        frequency: 'monthly',
+        frequency: 'mensuel',
         dueDay: 1
       });
     }
@@ -89,9 +89,9 @@ function PaymentSettingsSection() {
           selectedKeys={[settings.frequency]}
           onChange={(e) => setSettings({ ...settings, frequency: e.target.value as PaymentSettings['frequency'] })}
         >
-          <SelectItem key="monthly" value="monthly">Mensuel</SelectItem>
-          <SelectItem key="quarterly" value="quarterly">Trimestriel</SelectItem>
-          <SelectItem key="annually" value="annually">Annuel</SelectItem>
+          <SelectItem key="mensuel" value="mensuel">Mensuel</SelectItem>
+          <SelectItem key="trimestriel" value="trimestriel">Trimestriel</SelectItem>
+          <SelectItem key="annuel" value="annuel">Annuel</SelectItem>
         </Select>
 
         <Input

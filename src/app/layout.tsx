@@ -4,6 +4,7 @@ import WhatsAppFloat from '@/components/WhatsAppFloat';
 import { AuthProvider } from '@/components/AuthProvider';
 import { NextUIProvider } from '@nextui-org/react';
 import { Toaster } from 'sonner';
+import Script from 'next/script';
 
 export const metadata = {
   title: 'UNIE BTP',
@@ -17,6 +18,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <Script
+          id="cinetpay-script"
+          src="https://cdn.cinetpay.com/seamless/main.js"
+          strategy="beforeInteractive"
+        />
+      </head>
       <body className="overflow-x-hidden min-h-screen relative">
         <AuthProvider>
           <NextUIProvider>
@@ -25,7 +33,6 @@ export default function RootLayout({
         </AuthProvider>
         <WhatsAppFloat />
         <Toaster richColors position="top-left" />
-        {/* <CinetPayScript /> */}
       </body>
     </html>
   )

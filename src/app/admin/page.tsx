@@ -11,6 +11,8 @@ import {
   query,
   where,
   getCountFromServer,
+  getDoc,
+  setDoc,
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import {
@@ -25,7 +27,7 @@ import {
   FiSettings,
 } from "react-icons/fi";
 import { getAuth, signOut } from "firebase/auth";
-import { CircularProgress } from "@nextui-org/react";
+import { CircularProgress, Input, Card, Button } from "@nextui-org/react";
 import PaymentSection from "@/components/admin/PaymentSection";
 import UnacceptedCompaniesSection from "@/components/admin/UnacceptedCompaniesSection";
 import BlockedCompaniesSection from "@/components/admin/BlockedCompaniesSection";
@@ -33,6 +35,7 @@ import TransactionsSection from "@/components/admin/TransactionsSection";
 import PaymentSettingsSection from "@/components/admin/PaymentSettingsSection";
 import CompaniesSection from "@/components/admin/CompaniesSection";
 import Sidebar from "@/components/admin/Sidebar";
+import { toast } from "sonner";
 
 interface Company {
   id: string;
@@ -107,6 +110,9 @@ export default function AdminDashboard() {
   const [reminderLoading, setReminderLoading] = useState<string | null>(null);
   const [pendingPaymentsCount, setPendingPaymentsCount] = useState(0);
 
+  const [adhesionAmount, setAdhesionAmount] = useState<number>(0);
+  const [savingAdhesion, setSavingAdhesion] = useState(false);
+
   const fetchCompanies = async () => {
     try {
       setRefreshingCompanies(true);
@@ -148,32 +154,6 @@ export default function AdminDashboard() {
       setRefreshingBlocked(false);
     }
   };
-  // const fetchTransactions = async () => {
-  //   try {
-  //     setRefreshingTransactions(true);
-  //     const querySnapshot = await getDocs(collection(db, "transactions"));
-  //     const transactionData: any[] = [];
-  //     querySnapshot.forEach((doc) => {
-  //       const data = doc.data();
-  //       const formattedDate = new Intl.DateTimeFormat("en-US", {
-  //         year: "numeric",
-  //         month: "long",
-  //         day: "numeric",
-  //         hour: "2-digit",
-  //         minute: "2-digit",
-  //         second: "2-digit",
-  //         hour12: true,
-  //       }).format(new Date(data.dateTime));
-
-  //       transactionData.push({ id: doc.id, ...data, dateTime: formattedDate });
-  //     });
-  //     setTransactions(transactionData);
-  //     setRefreshingTransactions(false);
-  //   } catch (err) {
-  //     setError("Failed to load transactions");
-  //     setRefreshingTransactions(false);
-  //   }
-  // };
   // fetchUnacceptedCompanies
   const fetchUnacceptedCompanies = async () => {
     try {
@@ -234,10 +214,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchCompanies();
   }, []);
-
-  // useEffect(() => {
-  //   fetchTransactions();
-  // }, []);
+// reload user
 
   useEffect(() => {
     fetchBlockedCompanies();
@@ -289,67 +266,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     getCounts();
   }, []);
-
-  // const fetchPayments = useCallback(async () => {
-  //   setRefreshingPayments(true);
-  //   try {
-  //     const q = query(
-  //       collection(db, 'payments'),
-  //       where('year', '==', selectedYear),
-  //       where('month', '==', selectedMonth)
-  //     );
-
-  //     const snapshot = await getDocs(q);
-  //     const paymentData: CompanyPayment[] = [];
-
-  //     snapshot.forEach((doc) => {
-  //       paymentData.push(doc.data() as CompanyPayment);
-  //     });
-
-  //     setPayments(paymentData);
-  //     setPendingPaymentsCount(
-  //       paymentData.filter(p => p.status !== 'paid').length
-  //     );
-  //   } catch (err) {
-  //     setError('Failed to load payments');
-  //   } finally {
-  //     setRefreshingPayments(false);
-  //   }
-  // }, [selectedMonth, selectedYear]);
-
-  // const sendReminder = async (companyId: string) => {
-  //   setReminderLoading(companyId);
-  //   try {
-  //     const company = payments.find(p => p.companyId === companyId);
-  //     if (!company) return;
-
-  //     // Send email using your preferred email service
-  //     // Example using a custom API endpoint:
-  //     await fetch('/api/send-payment-reminder', {
-  //       method: 'POST',
-  //       headers: { 'Content-Type': 'application/json' },
-  //       body: JSON.stringify({
-  //         email: company.ceoEmail,
-  //         companyName: company.companyName,
-  //         amount: company.amount,
-  //         dueDate: company.dueDate
-  //       })
-  //     });
-
-  //     // Show success message
-  //     // You might want to add a toast notification here
-  //   } catch (err) {
-  //     setError('Failed to send reminder');
-  //   } finally {
-  //     setReminderLoading(null);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   if (activeTab === 'payments') {
-  //     fetchPayments();
-  //   }
-  // }, [selectedMonth, selectedYear, activeTab, fetchPayments]);
 
   const sidebarItems = [
     { id: "all", label: "Tous", icon: <FiUsers />, count: companiesCount },
@@ -411,6 +327,37 @@ export default function AdminDashboard() {
       setError("Failed to accept company");
     } finally {
       setAcceptLoading(null);
+    }
+  };
+
+  // Load current adhesion amount
+  useEffect(() => {
+    const loadAdhesionAmount = async () => {
+      try {
+        const settingsDoc = await getDoc(doc(db, 'settings', 'general'));
+        if (settingsDoc.exists()) {
+          setAdhesionAmount(settingsDoc.data().adhesionAmount || 0);
+        }
+      } catch (error) {
+        console.error('Error loading adhesion amount:', error);
+        toast.error("Erreur lors du chargement du montant d'adhésion");
+      }
+    };
+    loadAdhesionAmount();
+  }, []);
+
+  const handleSaveAdhesionAmount = async () => {
+    setSavingAdhesion(true);
+    try {
+      await setDoc(doc(db, 'settings', 'general'), {
+        adhesionAmount: Number(adhesionAmount)
+      }, { merge: true });
+      toast.success("Montant d'adhésion mis à jour");
+    } catch (error) {
+      console.error('Error saving adhesion amount:', error);
+      toast.error("Erreur lors de la mise à jour");
+    } finally {
+      setSavingAdhesion(false);
     }
   };
 
@@ -485,7 +432,47 @@ export default function AdminDashboard() {
         {/* {activeTab === 'payments' && (
           <PaymentSection payments={payments} selectedMonth={selectedMonth} selectedYear={selectedYear} setSelectedMonth={setSelectedMonth} setSelectedYear={setSelectedYear} fetchPayments={fetchPayments} refreshingPayments={refreshingPayments} reminderLoading={reminderLoading} sendReminder={sendReminder} />
         )} */}
-        {activeTab === "payment-settings" && <PaymentSettingsSection />}
+        {activeTab === "payment-settings" && (
+          <div className="space-y-6">
+            <PaymentSettingsSection />
+
+            <Card className="p-6">
+              <h2 className="text-xl font-bold mb-4">Paramètres d&apos;adhésion</h2>
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm text-gray-600">
+                    Définissez le montant d&apos;adhésion unique que chaque entreprise doit payer lors de son inscription.
+                  </p>
+                  <div className="flex gap-4 items-end max-w-md">
+                    <Input
+                      type="number"
+                      label="Montant d'adhésion (FCFA)"
+                      value={adhesionAmount.toString()}
+                      onChange={(e) => setAdhesionAmount(Number(e.target.value))}
+                      className="flex-1"
+                      min={0}
+                      endContent={
+                        <div className="pointer-events-none">
+                          <span className="text-default-400 text-small">FCFA</span>
+                        </div>
+                      }
+                    />
+                    <Button
+                      color="primary"
+                      onPress={handleSaveAdhesionAmount}
+                      isLoading={savingAdhesion}
+                    >
+                      Sauvegarder
+                    </Button>
+                  </div>
+                </div>
+                <div className="text-sm text-gray-500">
+                  <p>Note: Ce montant sera demandé une seule fois à chaque entreprise après son inscription.</p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
       </main>
     </div>
   );

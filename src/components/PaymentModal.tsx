@@ -17,54 +17,32 @@ export default function PaymentModal({ isOpen, onClose, settings, companyData }:
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    if (isOpen && !isScriptLoaded) {
-      // Remove any existing CinetPay scripts
-      const existingScript = document.querySelector('script[src*="cinetpay"]');
-      if (existingScript) {
-        document.body.removeChild(existingScript);
+    if (isOpen) {
+      // Check if script already exists
+      const existingScript = document.getElementById('cinetpay-script');
+      if (!existingScript) {
+        const script = document.createElement('script');
+        script.id = 'cinetpay-script';
+        script.src = 'https://cdn.cinetpay.com/seamless/main.js';
+        script.async = true;
+        script.onload = () => setIsScriptLoaded(true);
+        document.head.appendChild(script);
+      } else {
+        setIsScriptLoaded(true);
       }
-
-      // Create and load new script
-      const loadScript = async () => {
-        return new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://cdn.cinetpay.com/seamless/main.js';
-          script.async = true;
-          script.defer = true;
-          
-          script.onload = () => {
-            setIsScriptLoaded(true);
-            resolve(true);
-          };
-          
-          script.onerror = () => {
-            reject(new Error('Failed to load CinetPay script'));
-          };
-          
-          document.body.appendChild(script);
-        });
-      };
-
-      loadScript().catch((error) => {
-        console.log('Error loading CinetPay:', error);
-        toast.error("Erreur lors du chargement du système de paiement");
-      });
     }
+  }, [isOpen]);
 
-    // Cleanup function
+  useEffect(() => {
     return () => {
-      const script = document.querySelector('script[src*="cinetpay"]');
-      if (script) {
-        document.body.removeChild(script);
+      // Only remove script if it was dynamically added (not the one from layout)
+      const script = document.querySelector('script#cinetpay-script:not([data-nscript])');
+      if (script && script.parentNode) {
+        script.parentNode.removeChild(script);
       }
       setIsScriptLoaded(false);
-      
-      // Reset CinetPay instance
-      if (window.CinetPay) {
-        delete window.CinetPay;
-      }
     };
-  }, [isOpen]);
+  }, []);
 
   const handlePayment = async () => {
     if (!isScriptLoaded || isProcessing) return;
@@ -96,7 +74,7 @@ export default function PaymentModal({ isOpen, onClose, settings, companyData }:
         customer_phone_number: companyData.ceo.phone,
         customer_address: companyData.contact.address,
         customer_city: companyData.contact.city,
-        customer_country: "BJ",
+        customer_country: "CI",
         customer_state: companyData.contact.city,
         customer_zip_code: "",
       });
