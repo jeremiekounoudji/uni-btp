@@ -126,6 +126,8 @@ export default function Register() {
             phone: formData.ceoPhone,
           },
           createdAt: new Date().toISOString(),
+          hasPayedAdhesion: false,
+          adhesionPaymentDate: null
         });
         await sendEmailVerification(userCredential.user);
         toast.success(`Email de vérification envoyé à ${formData.email}. Veuillez le confirmer`);

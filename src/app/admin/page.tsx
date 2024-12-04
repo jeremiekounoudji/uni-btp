@@ -11,6 +11,8 @@ import {
   query,
   where,
   getCountFromServer,
+  getDoc,
+  setDoc,
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import {
@@ -25,7 +27,7 @@ import {
   FiSettings,
 } from "react-icons/fi";
 import { getAuth, signOut } from "firebase/auth";
-import { CircularProgress } from "@nextui-org/react";
+import { CircularProgress, Input, Card, Button } from "@nextui-org/react";
 import PaymentSection from "@/components/admin/PaymentSection";
 import UnacceptedCompaniesSection from "@/components/admin/UnacceptedCompaniesSection";
 import BlockedCompaniesSection from "@/components/admin/BlockedCompaniesSection";
@@ -33,6 +35,7 @@ import TransactionsSection from "@/components/admin/TransactionsSection";
 import PaymentSettingsSection from "@/components/admin/PaymentSettingsSection";
 import CompaniesSection from "@/components/admin/CompaniesSection";
 import Sidebar from "@/components/admin/Sidebar";
+import { toast } from "sonner";
 
 interface Company {
   id: string;
@@ -106,6 +109,9 @@ export default function AdminDashboard() {
   const [refreshingPayments, setRefreshingPayments] = useState(false);
   const [reminderLoading, setReminderLoading] = useState<string | null>(null);
   const [pendingPaymentsCount, setPendingPaymentsCount] = useState(0);
+
+  const [adhesionAmount, setAdhesionAmount] = useState<number>(0);
+  const [savingAdhesion, setSavingAdhesion] = useState(false);
 
   const fetchCompanies = async () => {
     try {
@@ -324,6 +330,37 @@ export default function AdminDashboard() {
     }
   };
 
+  // Load current adhesion amount
+  useEffect(() => {
+    const loadAdhesionAmount = async () => {
+      try {
+        const settingsDoc = await getDoc(doc(db, 'settings', 'general'));
+        if (settingsDoc.exists()) {
+          setAdhesionAmount(settingsDoc.data().adhesionAmount || 0);
+        }
+      } catch (error) {
+        console.error('Error loading adhesion amount:', error);
+        toast.error("Erreur lors du chargement du montant d'adhésion");
+      }
+    };
+    loadAdhesionAmount();
+  }, []);
+
+  const handleSaveAdhesionAmount = async () => {
+    setSavingAdhesion(true);
+    try {
+      await setDoc(doc(db, 'settings', 'general'), {
+        adhesionAmount: Number(adhesionAmount)
+      }, { merge: true });
+      toast.success("Montant d'adhésion mis à jour");
+    } catch (error) {
+      console.error('Error saving adhesion amount:', error);
+      toast.error("Erreur lors de la mise à jour");
+    } finally {
+      setSavingAdhesion(false);
+    }
+  };
+
   if (loading)
     return (
       <div className="flex justify-center items-center h-screen">
@@ -395,7 +432,47 @@ export default function AdminDashboard() {
         {/* {activeTab === 'payments' && (
           <PaymentSection payments={payments} selectedMonth={selectedMonth} selectedYear={selectedYear} setSelectedMonth={setSelectedMonth} setSelectedYear={setSelectedYear} fetchPayments={fetchPayments} refreshingPayments={refreshingPayments} reminderLoading={reminderLoading} sendReminder={sendReminder} />
         )} */}
-        {activeTab === "payment-settings" && <PaymentSettingsSection />}
+        {activeTab === "payment-settings" && (
+          <div className="space-y-6">
+            <PaymentSettingsSection />
+
+            <Card className="p-6">
+              <h2 className="text-xl font-bold mb-4">Paramètres d&apos;adhésion</h2>
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm text-gray-600">
+                    Définissez le montant d&apos;adhésion unique que chaque entreprise doit payer lors de son inscription.
+                  </p>
+                  <div className="flex gap-4 items-end max-w-md">
+                    <Input
+                      type="number"
+                      label="Montant d'adhésion (FCFA)"
+                      value={adhesionAmount.toString()}
+                      onChange={(e) => setAdhesionAmount(Number(e.target.value))}
+                      className="flex-1"
+                      min={0}
+                      endContent={
+                        <div className="pointer-events-none">
+                          <span className="text-default-400 text-small">FCFA</span>
+                        </div>
+                      }
+                    />
+                    <Button
+                      color="primary"
+                      onPress={handleSaveAdhesionAmount}
+                      isLoading={savingAdhesion}
+                    >
+                      Sauvegarder
+                    </Button>
+                  </div>
+                </div>
+                <div className="text-sm text-gray-500">
+                  <p>Note: Ce montant sera demandé une seule fois à chaque entreprise après son inscription.</p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
       </main>
     </div>
   );

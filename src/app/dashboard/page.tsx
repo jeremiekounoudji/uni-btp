@@ -1,18 +1,27 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
-import { signOut ,sendEmailVerification} from 'firebase/auth';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/components/AuthProvider';
-import { 
-  Navbar, 
-  NavbarBrand, 
-  NavbarContent, 
+import React, { useEffect, useState } from "react";
+import { auth, db } from "@/lib/firebase";
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+} from "firebase/firestore";
+import { signOut, sendEmailVerification } from "firebase/auth";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/AuthProvider";
+import {
+  Navbar,
+  NavbarBrand,
+  NavbarContent,
   NavbarItem,
   Button,
-  Card, 
+  Card,
   CardBody,
   CardHeader,
   Avatar,
@@ -30,18 +39,17 @@ import {
   TableCell,
   Input,
   Spinner,
-  
-  Chip
+  Chip,
 } from "@nextui-org/react";
-import { toast } from 'sonner';
-import { FiEdit2, FiCreditCard, FiLock } from 'react-icons/fi';
-import { CINETPAY_CONFIG } from '@/lib/cinetpay';
-import PaymentModal from '@/components/PaymentModal';
+import { toast } from "sonner";
+import { FiEdit2, FiCreditCard, FiLock } from "react-icons/fi";
+import { CINETPAY_CONFIG } from "@/lib/cinetpay";
+import PaymentModal from "@/components/PaymentModal";
 import { Settings } from "@/types/index";
-import EditCompanyModal from '@/components/EditCompanyModal';
-import ChangePasswordModal from '@/components/ChangePasswordModal';
-import ForgotPasswordModal from '@/components/ForgotPasswordModal';
-
+import EditCompanyModal from "@/components/EditCompanyModal";
+import ChangePasswordModal from "@/components/ChangePasswordModal";
+import ForgotPasswordModal from "@/components/ForgotPasswordModal";
+import AdhesionPaymentCard from "@/components/AdhesionPaymentCard";
 
 interface Company {
   id: string;
@@ -67,6 +75,8 @@ interface Company {
   };
   createdAt: string;
   totalCotisation?: number;
+  hasPayedAdhesion: boolean;
+  adhesionPaymentDate?: string;
 }
 
 interface Payment {
@@ -76,8 +86,6 @@ interface Payment {
   status: string;
 }
 
-
-
 export default function Dashboard() {
   const [companyData, setCompanyData] = useState<Company | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -85,55 +93,74 @@ export default function Dashboard() {
   const [isEditing, setIsEditing] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  
+  const [adhesionAmount, setAdhesionAmount] = useState<number>(0);
+
   const { user, authLoading } = useAuth();
   const router = useRouter();
 
   // First useEffect for auth check
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/');
+      router.push("/");
     }
   }, [user, authLoading, router]);
+
+  // Load adhesion amount
+  useEffect(() => {
+    const loadAdhesionAmount = async () => {
+      try {
+        const settingsDoc = await getDoc(doc(db, "settings", "general"));
+        if (settingsDoc.exists()) {
+          setAdhesionAmount(settingsDoc.data().adhesionAmount || 0);
+        }
+      } catch (error) {
+        console.log("Error loading adhesion amount:", error);
+      }
+    };
+    loadAdhesionAmount();
+  }, []);
 
   // reload user
   useEffect(() => {
     if (user) {
-      // Reload user to get latest verification status
       const checkVerification = async () => {
         await user.reload();
       };
       checkVerification();
     }
   }, [user]);
+
   // Separate useEffect for data fetching
   useEffect(() => {
     async function fetchData() {
       if (!user) return;
-      
+
       try {
         // Fetch company data
-        const companyDoc = await getDoc(doc(db, 'companies', user.uid));
+        const companyDoc = await getDoc(doc(db, "companies", user.uid));
         if (companyDoc.exists()) {
-          setCompanyData({ id: companyDoc.id, ...companyDoc.data() } as Company);
+          setCompanyData({
+            id: companyDoc.id,
+            ...companyDoc.data(),
+          } as Company);
         }
 
         // Fetch payments
         const paymentsQuery = query(
-          collection(db, 'transactions'),
-          where('companyId', '==', user.uid)
+          collection(db, "transactions"),
+          where("companyId", "==", user.uid)
         );
         const paymentsSnapshot = await getDocs(paymentsQuery);
-        const paymentsData = paymentsSnapshot.docs.map(doc => ({
+        const paymentsData = paymentsSnapshot.docs.map((doc) => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         })) as Payment[];
         setPayments(paymentsData);
 
         // Fetch settings
-        const settingsDoc = await getDoc(doc(db, 'settings', 'payments'));
+        const settingsDoc = await getDoc(doc(db, "settings", "payments"));
         if (settingsDoc.exists()) {
           setSettings(settingsDoc.data() as Settings);
         }
@@ -164,19 +191,19 @@ export default function Dashboard() {
   const handleSignOut = async () => {
     try {
       await signOut(auth);
-      router.push('/'); // Redirect to home page
-      toast.success('Déconnexion réussie');
+      router.push("/"); // Redirect to home page
+      toast.success("Déconnexion réussie");
     } catch (error) {
-      toast.error('Erreur lors de la déconnexion');
+      toast.error("Erreur lors de la déconnexion");
     }
   };
 
   // Add this function to refresh company data after update
   const refreshCompanyData = async () => {
     if (!user) return;
-    
+
     try {
-      const companyDoc = await getDoc(doc(db, 'companies', user.uid));
+      const companyDoc = await getDoc(doc(db, "companies", user.uid));
       if (companyDoc.exists()) {
         setCompanyData({ id: companyDoc.id, ...companyDoc.data() } as Company);
       }
@@ -195,13 +222,11 @@ export default function Dashboard() {
           </CardHeader>
           <CardBody>
             <p className="text-gray-700">
-              Votre compte entreprise est actuellement bloqué. Veuillez contacter l&apos;administrateur pour plus d&apos;informations et pour résoudre ce problème.
+              Votre compte entreprise est actuellement bloqué. Veuillez
+              contacter l&apos;administrateur pour plus d&apos;informations et
+              pour résoudre ce problème.
             </p>
-            <Button 
-              color="primary" 
-              className="mt-4"
-              onClick={handleSignOut}
-            >
+            <Button color="primary" className="mt-4" onClick={handleSignOut}>
               Déconnexion
             </Button>
           </CardBody>
@@ -209,13 +234,14 @@ export default function Dashboard() {
       </div>
     );
   }
- 
 
   if (!user.emailVerified) {
     const handleResendVerification = async () => {
       try {
         await sendEmailVerification(user);
-        toast.success(`Email de vérification envoyé dans votre boite mail. Veuillez le confirmer.`);
+        toast.success(
+          `Email de vérification envoyé dans votre boite mail. Veuillez le confirmer.`
+        );
       } catch (error: any) {
         toast.error("Email non envoyé. essayer plus tard.");
       }
@@ -229,23 +255,19 @@ export default function Dashboard() {
           </CardHeader>
           <CardBody>
             <p className="text-gray-700 mb-4">
-              Pour accéder au tableau de bord, veuillez vérifier votre adresse e-mail. Un e-mail de vérification a été envoyé à {user.email}.
+              Pour accéder au tableau de bord, veuillez vérifier votre adresse
+              e-mail. Un e-mail de vérification a été envoyé à {user.email}.
             </p>
             <p className="text-gray-700 mb-4">
-              Si vous n&apos;avez pas reçu l&apos;e-mail, vérifiez votre dossier spam ou cliquez sur le bouton ci-dessous pour renvoyer l&apos;e-mail.
+              Si vous n&apos;avez pas reçu l&apos;e-mail, vérifiez votre dossier
+              spam ou cliquez sur le bouton ci-dessous pour renvoyer
+              l&apos;e-mail.
             </p>
             <div className="flex gap-4">
-              <Button 
-                color="primary"
-                onClick={handleResendVerification}
-              >
+              <Button color="primary" onClick={handleResendVerification}>
                 Renvoyer l&apos;email de vérification
               </Button>
-              <Button 
-                color="danger" 
-                variant="light"
-                onClick={handleSignOut}
-              >
+              <Button color="danger" variant="light" onClick={handleSignOut}>
                 Déconnexion
               </Button>
             </div>
@@ -254,6 +276,42 @@ export default function Dashboard() {
       </div>
     );
   }
+
+  // Add this check before the main dashboard content
+  if (companyData && !companyData.hasPayedAdhesion) {
+    return (
+      <AdhesionPaymentCard
+            companyId={companyData.id}
+            adhesionAmount={adhesionAmount}
+            companyName={companyData.companyName}
+            onPaymentComplete={() => {
+
+              setCompanyData((prev) =>
+                prev ? { ...prev, hasPayedAdhesion: true } : null
+              );
+        }}
+      />
+      // <div className="min-h-screen bg-gray-50">
+      //   <Navbar className="bg-white border-b">
+      //     <NavbarBrand>
+      //       <p className="font-bold text-inherit">UNIE-BTP</p>
+      //     </NavbarBrand>
+      //     <NavbarContent justify="end">
+      //       <NavbarItem>
+      //         <Button color="danger" variant="flat" onClick={handleSignOut}>
+      //           Déconnexion
+      //         </Button>
+      //       </NavbarItem>
+      //     </NavbarContent>
+      //   </Navbar>
+
+      //   <div className="max-w-7xl mx-auto px-4 py-8">
+          
+      //   </div>
+      // </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar className="bg-white border-b">
@@ -262,11 +320,7 @@ export default function Dashboard() {
         </NavbarBrand>
         <NavbarContent justify="end">
           <NavbarItem>
-            <Button 
-              color="danger" 
-              variant="flat"
-              onClick={handleSignOut}
-            >
+            <Button color="danger" variant="flat" onClick={handleSignOut}>
               Déconnexion
             </Button>
           </NavbarItem>
@@ -279,16 +333,15 @@ export default function Dashboard() {
           <Card className="p-4">
             <CardHeader className="flex justify-between">
               <div className="flex gap-3">
-                <Avatar
-                  src="/company-logo.png"
-                  size="lg"
-                />
+                <Avatar src="/company-logo.png" size="lg" />
                 <div>
-                  <h4 className="text-xl font-bold">{companyData?.companyName}</h4>
+                  <h4 className="text-xl font-bold">
+                    {companyData?.companyName}
+                  </h4>
                   <p className="text-gray-500">{companyData?.contact.email}</p>
                 </div>
               </div>
-              <Button 
+              <Button
                 isIconOnly
                 variant="light"
                 onClick={() => setIsEditing(true)}
@@ -359,11 +412,17 @@ export default function Dashboard() {
                 <TableBody>
                   {payments.map((payment) => (
                     <TableRow key={payment.id}>
-                      <TableCell>{new Date(payment.date).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        {new Date(payment.date).toLocaleDateString()}
+                      </TableCell>
                       <TableCell>{payment.amount} FCFA</TableCell>
                       <TableCell>
                         <Chip
-                          color={payment.status === 'successful' ? 'success' : 'warning'}
+                          color={
+                            payment.status === "successful"
+                              ? "success"
+                              : "warning"
+                          }
                           size="sm"
                         >
                           {payment.status}
@@ -379,10 +438,10 @@ export default function Dashboard() {
       </div>
 
       {/* Payment Modal */}
-      <PaymentModal 
+      <PaymentModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
-        settings={settings }
+        settings={settings}
         companyData={companyData}
       />
 
@@ -399,9 +458,10 @@ export default function Dashboard() {
         isOpen={isChangingPassword}
         onClose={() => setIsChangingPassword(false)}
       /> */}
-      <ForgotPasswordModal isOpen={isChangingPassword} onClose={() => setIsChangingPassword(false)}/>
-
-
+      <ForgotPasswordModal
+        isOpen={isChangingPassword}
+        onClose={() => setIsChangingPassword(false)}
+      />
     </div>
   );
 }
