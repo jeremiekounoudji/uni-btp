@@ -166,6 +166,7 @@ export default function Dashboard() {
         }
       } catch (err: any) {
         setError(err.message);
+        console.log("Error loading data:", err);  
         toast.error("Error loading data");
       } finally {
         setLoading(false);
