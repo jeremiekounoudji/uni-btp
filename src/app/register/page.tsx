@@ -48,6 +48,9 @@ interface FormData {
   // Account Credentials
   password: string;
   confirmPassword: string;
+
+  // Admin Information
+  isAdmin: boolean;
 }
 
 export default function Register() {
@@ -73,6 +76,7 @@ export default function Register() {
     ceoPhone: "",
     password: "",
     confirmPassword: "",
+    isAdmin: false,
   });
 
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -127,7 +131,8 @@ export default function Register() {
           },
           createdAt: new Date().toISOString(),
           hasPayedAdhesion: false,
-          adhesionPaymentDate: null
+          adhesionPaymentDate: null,
+          isAdmin: formData.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL,
         });
         await sendEmailVerification(userCredential.user);
         toast.success(`Email de vérification envoyé à ${formData.email}. Veuillez le confirmer`);
