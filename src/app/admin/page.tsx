@@ -450,6 +450,75 @@ export default function AdminDashboard() {
     }
   };
 
+  // Loading state check
+  if (authChecking) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center">
+        <CircularProgress size="lg" />
+      </div>
+    );
+  }
+
+  // Admin check
+  if (!isAdmin) {
+    return (
+      <>
+        <Modal
+          isOpen={showLoginModal}
+          onClose={() => router.push("/")}
+          isDismissable={false}
+          hideCloseButton
+        >
+          <ModalContent>
+            <ModalHeader>Connexion Administrateur</ModalHeader>
+            <ModalBody>
+              <form onSubmit={handleLogin} className="space-y-4">
+                {loginError && (
+                  <div className="text-red-500 text-sm">{loginError}</div>
+                )}
+                <Input
+                  type="email"
+                  label="Email"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  required
+                />
+                <Input
+                  type="password"
+                  label="Mot de passe"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  required
+                />
+                <div className="flex justify-between items-center">
+                  <Button
+                    color="primary"
+                    variant="light"
+                    onPress={() => setShowAdminRegistrationModal(true)}
+                  >
+                    Créer un compte admin
+                  </Button>
+                  <Button
+                    type="submit"
+                    color="primary"
+                    isLoading={isLoggingIn}
+                  >
+                    Se connecter
+                  </Button>
+                </div>
+              </form>
+            </ModalBody>
+          </ModalContent>
+        </Modal>
+
+        <AdminRegistrationModal
+          isOpen={showAdminRegistrationModal}
+          onClose={() => setShowAdminRegistrationModal(false)}
+        />
+      </>
+    );
+  }
+
   if (loading)
     return (
       <div className="flex justify-center items-center h-screen">
