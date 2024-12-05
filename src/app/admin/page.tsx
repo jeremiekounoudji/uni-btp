@@ -306,6 +306,7 @@ export default function AdminDashboard() {
           setShowLoginModal(true);
           setIsAdmin(false);
           setAuthChecking(false);
+          router.push("/dashboard");
           return;
         }
         
