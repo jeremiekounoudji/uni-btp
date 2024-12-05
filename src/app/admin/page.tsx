@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 import {
   collection,
   getDocs,
@@ -36,6 +36,10 @@ import PaymentSettingsSection from "@/components/admin/PaymentSettingsSection";
 import CompaniesSection from "@/components/admin/CompaniesSection";
 import Sidebar from "@/components/admin/Sidebar";
 import { toast } from "sonner";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@nextui-org/react";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import Link from "next/link";
+import AdminRegistrationModal from "@/components/AdminRegistrationModal";
 
 interface Company {
   id: string;
@@ -113,6 +117,20 @@ export default function AdminDashboard() {
   const [adhesionAmount, setAdhesionAmount] = useState<number>(0);
   const [savingAdhesion, setSavingAdhesion] = useState(false);
 
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Add state for admin registration modal
+  const [showAdminRegistrationModal, setShowAdminRegistrationModal] = useState(false);
+
+  // Add loading state for initial auth check
+  const [authChecking, setAuthChecking] = useState(true);
+
+  // Move all function definitions to the top
   const fetchCompanies = async () => {
     try {
       setRefreshingCompanies(true);
@@ -126,15 +144,14 @@ export default function AdminDashboard() {
         acceptedCompanies.push({ id: doc.id, ...doc.data() } as Company);
       });
       setCompanies(acceptedCompanies);
-      setRefreshingCompanies(false);
     } catch (err) {
       setError("Failed to load companies");
-      setRefreshingCompanies(false);
     } finally {
       setLoading(false);
       setRefreshingCompanies(false);
     }
   };
+
   const fetchBlockedCompanies = async () => {
     try {
       setRefreshingBlocked(true);
@@ -154,7 +171,7 @@ export default function AdminDashboard() {
       setRefreshingBlocked(false);
     }
   };
-  // fetchUnacceptedCompanies
+
   const fetchUnacceptedCompanies = async () => {
     try {
       setRefreshingUnaccepted(true);
@@ -174,6 +191,148 @@ export default function AdminDashboard() {
       setRefreshingUnaccepted(false);
     }
   };
+
+  const getCounts = async () => {
+    try {
+      const companiesQuery = query(
+        collection(db, "companies"),
+        where("isAccepted", "==", true)
+      );
+      const companiesSnapshot = await getCountFromServer(companiesQuery);
+      setCompaniesCount(companiesSnapshot.data().count);
+
+      const transactionsQuery = collection(db, "transactions");
+      const transactionsSnapshot = await getCountFromServer(transactionsQuery);
+      setTransactionsCount(transactionsSnapshot.data().count);
+
+      const blockedCompaniesQuery = query(
+        collection(db, "companies"),
+        where("isActive", "==", false)
+      );
+      const blockedCompaniesSnapshot = await getCountFromServer(
+        blockedCompaniesQuery
+      );
+      setBlockedCompaniesCount(blockedCompaniesSnapshot.data().count);
+
+      const unacceptedCompaniesQuery = query(
+        collection(db, "companies"),
+        where("isAccepted", "==", false)
+      );
+      const unacceptedCompaniesSnapshot = await getCountFromServer(
+        unacceptedCompaniesQuery
+      );
+      setUnacceptedCompaniesCount(unacceptedCompaniesSnapshot.data().count);
+    } catch (err) {
+      console.log("Failed to get counts:", err);
+      setCompaniesCount(0);
+      setTransactionsCount(0);
+      setBlockedCompaniesCount(0);
+      setUnacceptedCompaniesCount(0);
+    }
+  };
+
+  const loadAdhesionAmount = async () => {
+    try {
+      const settingsDoc = await getDoc(doc(db, 'settings', 'general'));
+      if (settingsDoc.exists()) {
+        setAdhesionAmount(settingsDoc.data().adhesionAmount || 0);
+      }
+    } catch (error) {
+      console.log('Error loading adhesion amount:', error);
+      toast.error("Erreur lors du chargement du montant d'adhésion");
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoggingIn(true);
+    setLoginError("");
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        loginEmail,
+        loginPassword
+      );
+
+      const adminDoc = await getDoc(doc(db, "admins", userCredential.user.uid));
+      if (!adminDoc.exists()) {
+        toast.error("Accès non autorisé");
+        await auth.signOut();
+        router.push("/dashboard");
+        return;
+      }
+
+      setShowLoginModal(false);
+      setIsAdmin(true);
+      
+      await Promise.all([
+        fetchCompanies(),
+        getCounts(),
+        fetchBlockedCompanies(),
+        fetchUnacceptedCompanies()
+      ]);
+      
+      toast.success("Connexion réussie");
+    } catch (error: any) {
+      setLoginError(
+        error.code === "auth/invalid-credential"
+          ? "Email ou mot de passe incorrect"
+          : "Erreur lors de la connexion"
+      );
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  // Now add the useEffect hooks
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      try {
+        console.log("User is authenticated", user);
+        if (!user) {
+          setShowLoginModal(true);
+          setIsAdmin(false);
+          setAuthChecking(false);
+          return;
+        }
+
+        // Check admin collection instead of companies
+        console.log("start checking admin status");
+        const adminDoc = await getDoc(doc(db, "admins", user.uid));
+        
+        if (!adminDoc.exists()) {
+          console.log("User is not an admin");
+          setShowLoginModal(true);
+          setIsAdmin(false);
+          setAuthChecking(false);
+          return;
+        }
+        
+        console.log("User is an admin");
+        setIsAdmin(true);
+        setShowLoginModal(false);
+        
+        // Load initial data after admin status confirmed
+        await Promise.all([
+          fetchCompanies(),
+          getCounts(),
+          fetchBlockedCompanies(),
+          fetchUnacceptedCompanies(),
+          loadAdhesionAmount()
+        ]);
+        
+      } catch (error) {
+        console.log("Error checking admin status:", error);
+        setShowLoginModal(true);
+        setIsAdmin(false);
+      } finally {
+        setAuthChecking(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const toggleCompanyStatus = async (companyId: string, isActive: boolean) => {
     setToggleLoading(companyId);
@@ -211,61 +370,6 @@ export default function AdminDashboard() {
       setDeleteLoading(null);
     }
   };
-  useEffect(() => {
-    fetchCompanies();
-  }, []);
-// reload user
-
-  useEffect(() => {
-    fetchBlockedCompanies();
-  }, []);
-
-  useEffect(() => {
-    fetchUnacceptedCompanies();
-  }, []);
-
-  const getCounts = async () => {
-    try {
-      const companiesQuery = query(
-        collection(db, "companies"),
-        where("isAccepted", "==", true)
-      );
-      const companiesSnapshot = await getCountFromServer(companiesQuery);
-      setCompaniesCount(companiesSnapshot.data().count);
-
-      const transactionsQuery = collection(db, "transactions");
-      const transactionsSnapshot = await getCountFromServer(transactionsQuery);
-      setTransactionsCount(transactionsSnapshot.data().count);
-
-      const blockedCompaniesQuery = query(
-        collection(db, "companies"),
-        where("isActive", "==", false)
-      );
-      const blockedCompaniesSnapshot = await getCountFromServer(
-        blockedCompaniesQuery
-      );
-      setBlockedCompaniesCount(blockedCompaniesSnapshot.data().count);
-
-      const unacceptedCompaniesQuery = query(
-        collection(db, "companies"),
-        where("isAccepted", "==", false)
-      );
-      const unacceptedCompaniesSnapshot = await getCountFromServer(
-        unacceptedCompaniesQuery
-      );
-      setUnacceptedCompaniesCount(unacceptedCompaniesSnapshot.data().count);
-    } catch (err) {
-      console.error("Failed to get counts:", err);
-      setCompaniesCount(0);
-      setTransactionsCount(0);
-      setBlockedCompaniesCount(0);
-      setUnacceptedCompaniesCount(0);
-    }
-  };
-
-  useEffect(() => {
-    getCounts();
-  }, []);
 
   const sidebarItems = [
     { id: "all", label: "Tous", icon: <FiUsers />, count: companiesCount },
@@ -306,7 +410,7 @@ export default function AdminDashboard() {
       await signOut(auth);
       router.push("/"); // Redirect to the home page
     } catch (error) {
-      console.error("Error logging out:", error);
+      console.log("Error logging out:", error);
     }
   };
 
@@ -330,22 +434,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // Load current adhesion amount
-  useEffect(() => {
-    const loadAdhesionAmount = async () => {
-      try {
-        const settingsDoc = await getDoc(doc(db, 'settings', 'general'));
-        if (settingsDoc.exists()) {
-          setAdhesionAmount(settingsDoc.data().adhesionAmount || 0);
-        }
-      } catch (error) {
-        console.error('Error loading adhesion amount:', error);
-        toast.error("Erreur lors du chargement du montant d'adhésion");
-      }
-    };
-    loadAdhesionAmount();
-  }, []);
-
   const handleSaveAdhesionAmount = async () => {
     setSavingAdhesion(true);
     try {
@@ -354,7 +442,7 @@ export default function AdminDashboard() {
       }, { merge: true });
       toast.success("Montant d'adhésion mis à jour");
     } catch (error) {
-      console.error('Error saving adhesion amount:', error);
+      console.log('Error saving adhesion amount:', error);
       toast.error("Erreur lors de la mise à jour");
     } finally {
       setSavingAdhesion(false);
