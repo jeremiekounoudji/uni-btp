@@ -112,10 +112,14 @@ export default function Dashboard() {
     const loadAdhesionAmount = async () => {
       try {
         const settingsDoc = await getDoc(doc(db, "settings", "general"));
+        console.log("Fetching adhesion amount");
         if (settingsDoc.exists()) {
           setAdhesionAmount(settingsDoc.data().adhesionAmount || 0);
         }
+        console.log("Fetching adhesion amount done");
+        console.log("Fetching adhesion amount value", adhesionAmount);
       } catch (error) {
+        console.log("Fetching adhesion amount DEBUG LOG");
         console.log("Error loading adhesion amount:", error);
       }
     };
@@ -139,34 +143,44 @@ export default function Dashboard() {
 
       try {
         // Fetch company data
+        console.log("Fetching company data");
+
         const companyDoc = await getDoc(doc(db, "companies", user.uid));
+        console.log("Fetching company data");
+
         if (companyDoc.exists()) {
           setCompanyData({
             id: companyDoc.id,
             ...companyDoc.data(),
           } as Company);
         }
-
+        console.log("Fetching company data");
+        // Fetch settings
+        console.log("Fetching settings");
+        const settingsDoc = await getDoc(doc(db, "settings", "payments"));
+        console.log("Fetching settings");
+        if (settingsDoc.exists()) {
+          setSettings(settingsDoc.data() as Settings);
+        }
         // Fetch payments
         const paymentsQuery = query(
           collection(db, "transactions"),
           where("companyId", "==", user.uid)
         );
+        console.log("Fetching payments");
+        console.log("Fetching payments query", paymentsQuery);
         const paymentsSnapshot = await getDocs(paymentsQuery);
+        console.log("Fetching payments done");
+
         const paymentsData = paymentsSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         })) as Payment[];
         setPayments(paymentsData);
-
-        // Fetch settings
-        const settingsDoc = await getDoc(doc(db, "settings", "payments"));
-        if (settingsDoc.exists()) {
-          setSettings(settingsDoc.data() as Settings);
-        }
+        console.log("Fetching payments done", paymentsData);
       } catch (err: any) {
         setError(err.message);
-        console.log("Error loading data:", err);  
+        console.log("Error loading data:", err);
         toast.error("Error loading data");
       } finally {
         setLoading(false);
@@ -282,14 +296,13 @@ export default function Dashboard() {
   if (companyData && !companyData.hasPayedAdhesion) {
     return (
       <AdhesionPaymentCard
-            companyId={companyData.id}
-            adhesionAmount={adhesionAmount}
-            companyName={companyData.companyName}
-            onPaymentComplete={() => {
-
-              setCompanyData((prev) =>
-                prev ? { ...prev, hasPayedAdhesion: true } : null
-              );
+        companyId={companyData.id}
+        adhesionAmount={adhesionAmount}
+        companyName={companyData.companyName}
+        onPaymentComplete={() => {
+          setCompanyData((prev) =>
+            prev ? { ...prev, hasPayedAdhesion: true } : null
+          );
         }}
       />
       // <div className="min-h-screen bg-gray-50">
@@ -307,7 +320,7 @@ export default function Dashboard() {
       //   </Navbar>
 
       //   <div className="max-w-7xl mx-auto px-4 py-8">
-          
+
       //   </div>
       // </div>
     );

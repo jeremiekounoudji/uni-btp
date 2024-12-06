@@ -14,36 +14,29 @@ service cloud.firestore {
 
     // Admins collection - Simplified rules
     match /admins/{adminId} {
-      // Allow reading for authentication check
       allow read: if isAuthenticated();
-      // Allow creating new admin documents
       allow create: if isAuthenticated();
-      // Allow admin to update their own document
       allow update, delete: if request.auth.uid == adminId;
     }
 
-    // Companies collection
+    // Companies collection - Allow all operations without restrictions
     match /companies/{companyId} {
-      // Allow read if user owns the document or is admin
-      allow read: if isAuthenticated() && 
-        (request.auth.uid == companyId || isAdmin());
-      // Allow write if user owns the document or is admin  
-      allow write: if isAuthenticated() && 
-        (request.auth.uid == companyId || isAdmin());
+      allow read, write: if true;
     }
 
-    // Settings collection
-    match /settings/{document=**} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
+    // Nouvelles règles pour la collection settings
+    match /settings/{document} {
+      allow read: if request.auth != null;  // Permet la lecture à tous les utilisateurs authentifiés
+      allow write: if request.auth != null 
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
     }
-
-    // Transactions collection
+     // Règles pour la collection payments/transactions
     match /transactions/{transactionId} {
-      allow read: if isAuthenticated() && 
-        (resource.data.userId == request.auth.uid || isAdmin());
-      allow write: if isAuthenticated() && 
-        (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
   }
 } 

@@ -234,10 +234,12 @@ export default function AdminDashboard() {
   const loadAdhesionAmount = async () => {
     try {
       const settingsDoc = await getDoc(doc(db, 'settings', 'general'));
+      console.log("Fetching adhesion amount");  
       if (settingsDoc.exists()) {
         setAdhesionAmount(settingsDoc.data().adhesionAmount || 0);
       }
     } catch (error) {
+      console.log('Fetching adhesion amount DEBUG LOG');  
       console.log('Error loading adhesion amount:', error);
       toast.error("Erreur lors du chargement du montant d'adhésion");
     }
